@@ -48,6 +48,7 @@ include = [
     "bsmain*",
     "bugsink*",
     "compat*",
+    "dashboard*",
     "events*",
     "ee*",
     "ingest*",
