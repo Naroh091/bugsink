@@ -78,24 +78,7 @@ def _phone_home():
 
 def home(request):
     _phone_home()
-
-    if request.user.project_set.filter(projectmembership__accepted=True).distinct().count() == 1:
-        # if the user has exactly one project, we redirect them to that project
-        project = request.user.project_set.get()
-        return redirect("issue_list_open", project_pk=project.id)
-
-    if request.user.project_set.all().distinct().count() > 0:
-        # note: no filter on projectmembership__accepted=True here; if there is _any_ project, we show the project list
-        return redirect("project_list")
-
-    if get_bugsink_settings().SINGLE_TEAM:
-        # in single-team mode, there's is no (meaningful) team list. We redirect to the (empty) project list instead
-        return redirect("project_list")
-
-    # final fallback: show the team list.
-    # (the assumption is: if there are no projects, the team-list is the most useful page to show, because if there are
-    # no teams, this is where you can create one, and if there are teams, this is where you can select one)
-    return redirect("team_list")
+    return redirect("dashboard")
 
 
 @login_exempt

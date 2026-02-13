@@ -11,6 +11,7 @@ function matchIssueCheckboxesStateToMain(elementContainingMainCheckbox) {
     for (let i = 0; i < checkboxes.length; i++) {
         checkboxes[i].checked = mainCheckbox.checked;
     }
+    updateActionBar();
 }
 
 function matchMainCheckboxStateToIssueCheckboxes() {
@@ -36,6 +37,39 @@ function matchMainCheckboxStateToIssueCheckboxes() {
     }
     if (allUnchecked) {
         mainCheckbox.checked = false;
+    }
+    updateActionBar();
+}
+
+function updateActionBar() {
+    const checkboxes = document.querySelectorAll(".js-issue-checkbox");
+    let anyChecked = false;
+    for (let i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            anyChecked = true;
+            break;
+        }
+    }
+    const bar = document.getElementById("js-action-bar");
+    if (!bar) return;
+    if (anyChecked) {
+        bar.classList.remove("opacity-0", "pointer-events-none");
+        bar.classList.add("opacity-100");
+    } else {
+        bar.classList.add("opacity-0", "pointer-events-none");
+        bar.classList.remove("opacity-100");
+    }
+}
+
+function applySearch(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        var params = new URLSearchParams(window.location.search);
+        params.delete("page");
+        var q = event.target.value;
+        if (q) { params.set("q", q); } else { params.delete("q"); }
+        var qs = params.toString();
+        window.location.href = window.location.pathname + (qs ? "?" + qs : "");
     }
 }
 

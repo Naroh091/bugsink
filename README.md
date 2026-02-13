@@ -5,10 +5,17 @@
 * [Sentry-SDK compatible](https://www.bugsink.com/connect-any-application/)
 * [Scalable and reliable](https://www.bugsink.com/scalable-and-reliable/)
 
-### Screenshot
+## About this fork
 
-![Screenshot](https://www.bugsink.com/static/images/JsonSchemaDefinitionException.5e02c1544273.png)
+This fork extends Bugsink with a focus on **multi-project workflows**. Key improvements include:
 
+- **Cross-project dashboard** -- A new overview dashboard that surfaces issues across all teams and projects, giving you a big-picture view of the state of things at a glance.
+- **Issue charts** -- Visual charts that show how issues behave over time, making it easier to spot trends and regressions.
+- **Redesigned UI** -- Screens have been reworked to make better use of available space, keeping things clean and efficient as you navigate between projects.
+
+A big thank you to [@vanschelven](https://github.com/vanschelven) for building Bugsink and making it open source. This fork wouldn't exist without that foundation.
+
+-- David
 
 ### Installation & docs
 
@@ -33,3 +40,4 @@ Now, you can [set up your first project](https://www.bugsink.com/docs/quickstart
 [Detailed installation instructions](https://www.bugsink.com/docs/installation/) are on the Bugsink website.
 
 [More information and documentation](https://www.bugsink.com/)
+

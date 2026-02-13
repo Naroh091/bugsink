@@ -327,6 +327,21 @@ def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
     except ProjectMembership.DoesNotExist:
         member = None  # this can happen if the user is superuser (as per `project_membership_required` decorator)
 
+    state_filter_choices = [
+        ("open", "Open"),
+        ("unresolved", "Unresolved"),
+        ("muted", "Muted"),
+        ("resolved", "Resolved"),
+        ("all", "All"),
+    ]
+    state_url_map = {
+        "open": reverse("issue_list_open", kwargs={"project_pk": project.pk}),
+        "unresolved": reverse("issue_list_unresolved", kwargs={"project_pk": project.pk}),
+        "muted": reverse("issue_list_muted", kwargs={"project_pk": project.pk}),
+        "resolved": reverse("issue_list_resolved", kwargs={"project_pk": project.pk}),
+        "all": reverse("issue_list_all", kwargs={"project_pk": project.pk}),
+    }
+
     return render(request, "issues/issue_list.html", {
         "project": project,
         "member": member,
@@ -342,6 +357,8 @@ def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
         "disable_unmute_buttons": state_filter in ("resolved", "open"),
         "q": request.GET.get("q", ""),
         "page_obj": page_obj,
+        "state_filter_choices": state_filter_choices,
+        "state_url_map": state_url_map,
     })
 
 

@@ -86,6 +86,7 @@ urlpatterns = [
     path('teams/', include('teams.urls')),
     path('events/', include('events.urls')),
     path('issues/', include('issues.urls')),
+    path('dashboard/', include('dashboard.urls')),
     path('files/', include('files.urls')),
 
     # this weird URL is what sentry-cli uses as part of their "login" flow. weird, because the word ':orgslug' shows up

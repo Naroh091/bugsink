@@ -6,6 +6,7 @@ __pycache__
 # Virtual Environments / build
 /.env
 /.venv
+/venv
 /bin/
 /include/
 /lib/

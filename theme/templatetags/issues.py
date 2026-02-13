@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 from django import template
+from django.utils import timezone
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 
@@ -287,3 +288,31 @@ def timestamp_with_millis(value):
         return value
 
     return _date_with_milis_html(dt)
+
+
+@register.filter
+def shorttimesince(value):
+    """Short relative time: 10s, 34m, 2h, 3d, 5w, 4mo, 1y."""
+    if not isinstance(value, datetime):
+        return value
+
+    now = timezone.now()
+    delta = now - value
+    total_seconds = int(delta.total_seconds())
+
+    if total_seconds < 0:
+        return "0s"
+    if total_seconds < 60:
+        return f"{total_seconds}s"
+    if total_seconds < 3600:
+        return f"{total_seconds // 60}m"
+    if total_seconds < 86400:
+        return f"{total_seconds // 3600}h"
+    days = total_seconds // 86400
+    if days < 7:
+        return f"{days}d"
+    if days < 30:
+        return f"{days // 7}w"
+    if days < 365:
+        return f"{days // 30}mo"
+    return f"{days // 365}y"

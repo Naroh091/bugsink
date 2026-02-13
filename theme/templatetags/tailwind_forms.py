@@ -14,7 +14,7 @@ def tailwind_formfield(formfield, implicit=False):
         formfield.field.widget.attrs['class'] = "bg-red-50 dark:bg-red-900"
     else:
         formfield.field.widget.attrs['class'] = "bg-slate-50 dark:bg-slate-800"
-    formfield.field.widget.attrs['class'] += " pl-4 py-2 md:py-4 focus:outline-none w-full"
+    formfield.field.widget.attrs['class'] += " border border-slate-300 dark:border-slate-600 rounded-md pl-3 py-1.5 text-sm focus:outline-none focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-cyan-200 dark:focus:ring-cyan-700 w-full"
 
     if implicit:
         formfield.field.widget.attrs['placeholder'] = formfield.label

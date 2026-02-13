@@ -11,7 +11,7 @@
 {% block content %}
 
 {% for warning in issue.project.get_warnings %}
-<div class="flex p-4 bg-yellow-100 dark:bg-amber-800 border-b-2 border-yellow-200 dark:border-amber-900">
+<div class="flex p-4 bg-yellow-100 dark:bg-amber-800 border-b border-yellow-200 dark:border-amber-900">
     <div class="text-slate-800 dark:text-slate-100">
         {{ warning }}
     </div>
@@ -25,16 +25,16 @@
         {% csrf_token %}
         {% if issue.is_resolved %}{# i.e. buttons disabled #}
             {# see issues/tests.py for why this is turned off ATM #}
-            {# <button class="font-bold text-slate-800 dark:text-slate-100 border-slate-500 dark:border-slate-400 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 bg-cyan-200 dark:bg-cyan-700 hover:bg-cyan-400 dark:hover:bg-cyan-600 active:ring-3 rounded-md" name="action" value="reopen">Reopen</button> #}
+            {# <button class="font-bold text-slate-800 dark:text-slate-100 border-slate-500 dark:border-slate-400 px-3.5 py-1.5 ml-1 border bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-md" name="action" value="reopen">Reopen</button> #}
 
             {% spaceless %}{# needed to avoid whitespace between the looks-like-one-buttons #}
             {% if issue.project.has_releases %}
-                <button disabled class="font-bold text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
+                <button disabled class="text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 ml-1 border rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
 
-                <button disabled class="font-bold text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 stroke-slate-300 dark:stroke-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-r-2 border-t-2 border-b-2 rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                <button disabled class="text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 stroke-slate-300 dark:stroke-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-t border-b rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
                 {# we just hide the whole dropdown; this is the easiest implementation of not-showing the dropdown #}
             {% else %}
-                <button disabled class="font-bold text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 rounded-md" name="action" value="resolved">{% translate "Resolve" %}</button>
+                <button disabled class="text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 ml-1 border rounded-md" name="action" value="resolved">{% translate "Resolve" %}</button>
             {% endif %}
             {% endspaceless %}
 
@@ -43,18 +43,18 @@
 
             {% if issue.project.has_releases %}
                 {# 'by next' is shown even if 'by current' is also shown: just because you haven't seen 'by current' doesn't mean it's actually already solved; and in fact we show this option first precisely because we can always show it #}
-                <button class="font-bold text-slate-800 dark:text-slate-100 border-slate-500 dark:border-slate-400 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 bg-cyan-200 dark:bg-cyan-700 hover:bg-cyan-400 dark:hover:bg-cyan-600 active:ring-3 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
+                <button class="text-slate-600 dark:text-slate-200 border-slate-300 dark:border-slate-500 px-3.5 py-1.5 ml-1 border bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
 
                 <div class="dropdown">
-                    <button disabled {# disabled b/c clicking the dropdown does nothing - we have hover for that #} class="font-bold text-slate-800 dark:text-slate-100 fill-slate-800 dark:fill-slate-100 border-slate-500 dark:border-slate-400 pl-4 pr-4 pb-2 pt-2 border-r-2 border-t-2 border-b-2 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                    <button disabled {# disabled b/c clicking the dropdown does nothing - we have hover for that #} class="text-slate-600 dark:text-slate-200 fill-slate-600 dark:fill-slate-200 border-slate-300 dark:border-slate-500 px-3.5 py-1.5 border-r border-t border-b hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
 
                     {# note that we can depend on get_latest_release being available, because we're in the 'project.has_releases' branch #}
                     <div class="dropdown-content-right flex-col pl-2">
 
                         {% if not issue.occurs_in_last_release %}
-                            <button name="action" value="resolved_release:{{ issue.project.get_latest_release.version }}" class="block self-stretch font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-l-2 border-r-2 border-b-2 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">Resolved in latest ({{ issue.project.get_latest_release.get_short_version }})</button>
+                            <button name="action" value="resolved_release:{{ issue.project.get_latest_release.version }}" class="block self-stretch text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">Resolved in latest ({{ issue.project.get_latest_release.get_short_version }})</button>
                         {% else %}
-                            <button name="action" value="resolved_release:{{ issue.project.get_latest_release.version }}" disabled class="block self-stretch font-bold text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 pl-4 pr-4 pb-2 pt-2 border-l-2 border-r-2 border-b-2 bg-white dark:bg-slate-900 text-left whitespace-nowrap">Resolved in latest ({{ issue.project.get_latest_release.get_short_version }})</button>
+                            <button name="action" value="resolved_release:{{ issue.project.get_latest_release.version }}" disabled class="block self-stretch text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 px-3.5 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 text-left whitespace-nowrap">Resolved in latest ({{ issue.project.get_latest_release.get_short_version }})</button>
                         {% endif %}
 
                     </div>
@@ -62,7 +62,7 @@
 
 
             {% else %}
-                <button class="font-bold text-slate-800 dark:text-slate-100 border-slate-500 dark:border-slate-400 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 bg-cyan-200 dark:bg-cyan-700 hover:bg-cyan-400 dark:hover:bg-cyan-600 active:ring-3 rounded-md" name="action" value="resolve">{% translate "Resolve" %}</button>
+                <button class="text-slate-600 dark:text-slate-200 border-slate-300 dark:border-slate-500 px-3.5 py-1.5 ml-1 border bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-md" name="action" value="resolve">{% translate "Resolve" %}</button>
             {% endif %}
 
             {% endspaceless %}
@@ -70,22 +70,22 @@
 
         {% spaceless %}{# needed to avoid whitespace between the looks-like-one-buttons #}
         {% if not issue.is_muted and not issue.is_resolved %}
-            <button class="font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-s-md" name="action" value="mute">{% translate "Mute" %}</button>
+            <button class="text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 ml-1 border hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-s-md" name="action" value="mute">{% translate "Mute" %}</button>
         {% else %}
-            <button disabled class="font-bold text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 ml-1 border-2 rounded-s-md" name="action" value="mute">{% translate "Mute" %}</button>
+            <button disabled class="text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 ml-1 border rounded-s-md" name="action" value="mute">{% translate "Mute" %}</button>
         {% endif %}
 
         <div class="dropdown">
             {% if not issue.is_muted and not issue.is_resolved %}
-                <button disabled {# disabled b/c clicking the dropdown does nothing - we have hover for that #} class="font-bold text-slate-500 dark:text-slate-300 fill-slate-500 dark:fill-slate-500 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-r-2 border-b-2 border-t-2 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3">{% translate "Mute for/until&nbsp;&nbsp;" %}<svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                <button disabled {# disabled b/c clicking the dropdown does nothing - we have hover for that #} class="text-slate-500 dark:text-slate-300 fill-slate-500 dark:fill-slate-500 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3">{% translate "Mute for/until&nbsp;&nbsp;" %}<svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
 
                 <div class="dropdown-content-right flex-col">
                     {% for mute_option in mute_options %}
-                        <button name="action" value="mute_{{ mute_option.for_or_until }}:{{ mute_option.period_name }},{{ mute_option.nr_of_periods }},{{ mute_option.gte_threshold }}" class="block self-stretch font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-l-2 border-r-2 border-b-2 bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">{% if mute_option.for_or_until == "for" %}{{ mute_option.nr_of_periods }} {{ mute_option.period_name }}{% if mute_option.nr_of_periods != 1 %}s{% endif %}{% else %}{{ mute_option.gte_threshold }} events per {% if mute_option.nr_of_periods != 1%} {{ mute_option.nr_of_periods }} {{ mute_option.period_name }}s{% else %} {{ mute_option.period_name }}{% endif %}{% endif %}</button>
+                        <button name="action" value="mute_{{ mute_option.for_or_until }}:{{ mute_option.period_name }},{{ mute_option.nr_of_periods }},{{ mute_option.gte_threshold }}" class="block self-stretch text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">{% if mute_option.for_or_until == "for" %}{{ mute_option.nr_of_periods }} {{ mute_option.period_name }}{% if mute_option.nr_of_periods != 1 %}s{% endif %}{% else %}{{ mute_option.gte_threshold }} events per {% if mute_option.nr_of_periods != 1%} {{ mute_option.nr_of_periods }} {{ mute_option.period_name }}s{% else %} {{ mute_option.period_name }}{% endif %}{% endif %}</button>
                     {% endfor %}
                 </div>
             {% else %}
-                <button disabled class="font-bold text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-r-2 border-b-2 border-t-2">{% translate "Mute for/until&nbsp;&nbsp;" %}<svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                <button disabled class="text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t">{% translate "Mute for/until&nbsp;&nbsp;" %}<svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
                 {# note that when the issue is muted, no further muting is allowed. this is a design decision, I figured this is the easiest-to-understand UI, #}
                 {# both at the point-of-clicking and when displaying the when-will-this-be-unmuted in some place #}
                 {# (the alternative would be to allow multiple simulteneous reasons for unmuting to exist next to each other #}
@@ -94,9 +94,9 @@
         </div>
 
         {% if issue.is_muted and not issue.is_resolved %}
-            <button class="font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-r-2 border-b-2 border-t-2 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
+            <button class="text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
         {% else %}
-            <button disabled class="font-bold text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 border-r-2 border-b-2 border-t-2 rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
+            <button disabled class="text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
         {% endif %}
 
         {% endspaceless %}
@@ -105,26 +105,39 @@
     </div> {# top, RHS (buttons) #}
 
     <div class="overflow-hidden"><!-- top, LHS (various texts) -->
-        <h1 class="text-4xl font-bold text-ellipsis whitespace-nowrap overflow-hidden pb-1 {# needed for descenders of 'g' #}">{{ issue.calculated_type }}</h1>
-        <div class="text-xl text-ellipsis whitespace-nowrap overflow-hidden">{{ issue.calculated_value }}</div>
+        <h1 class="text-2xl font-bold text-ellipsis whitespace-nowrap overflow-hidden pb-1 {# needed for descenders of 'g' #}">{{ issue.calculated_type }}</h1>
+        <div class="text-base text-ellipsis whitespace-nowrap overflow-hidden">{{ issue.calculated_value }}</div>
         {% if request_repr %}<div class="italic mt-4">{{ request_repr }}</div>{% endif %}
         <div class="text-ellipsis whitespace-nowrap overflow-hidden"><span class="font-bold">{% if issue.last_frame_module %}{{ issue.last_frame_module}}{% else %}{{ issue.last_frame_filename }}{% endif %}</span>{% if issue.last_frame_function %} in <span class="font-bold">{{ issue.last_frame_function }}</span>{% endif %}</div>
     </div> {# top, LHS (various texts) #}
 
 </div>
 
+{% if is_event_page %}
+<div class="mx-4 mb-2 flex items-center">
+    <div class="text-sm text-slate-500 dark:text-slate-400 italic">
+        {% blocktranslate with digest_order=event.digest_order|intcomma total_events=issue.digested_event_count|intcomma ingested_at=event.ingested_at|date:"j M G:i T" %}Event {{ digest_order }} of {{ total_events }} at <span class="font-semibold not-italic">{{ ingested_at }}</span>{% endblocktranslate %}{% if q %} — {{ event_qs_count|intcomma }} {% translate "found by search" %}{% endif %}
+    </div>
+    <div class="ml-auto flex items-center">
+        {% include "issues/_event_nav.html" %}
+        <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/events/{% current_qs %}" class="text-sm text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-2.5 py-1 ml-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 active:ring-3 whitespace-nowrap">{% translate "All Events" %}</a>
+    </div>
+</div>
+{% endif %}
+
 <div class="flex items-start"><!-- flex container for the 2 'windows' in this page' -->
 
+    {% block main_panel %}
     {# overflow-x-auto is needed at the level of the flex item such that it works at the level where we need it (the code listings)#}
-    <div class="ml-4 mb-4 mr-4 border-2 overflow-x-auto flex-[2_1_96rem]"><!-- the whole of the big tabbed view--> {# 96rem is 1536px, which matches the 2xl class; this is no "must" but eyeballing revealed: good result #}
-        <div class="flex bg-slate-50 dark:bg-slate-800 border-b-2"><!-- container for the actual tab buttons -->
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "stacktrace" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Stacktrace" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/details/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "event-details" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Event&nbsp;Details" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/breadcrumbs/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "breadcrumbs" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Breadcrumbs" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/events/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "event-list" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Event&nbsp;List" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/tags/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "tags" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Tags" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/grouping/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "grouping" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "Grouping" %}</div></a>
-            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/history/{% current_qs %}"><div class="p-4 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 {% if tab == "history" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-4{% else %}text-slate-500 border-slate-400 hover:border-b-4{% endif %}">{% translate "History" %}</div></a>
+    <div class="ml-4 mb-4 mr-4 border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto flex-[2_1_96rem]"><!-- the whole of the big tabbed view--> {# 96rem is 1536px, which matches the 2xl class; this is no "must" but eyeballing revealed: good result #}
+        <div class="flex bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700"><!-- container for the actual tab buttons -->
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "stacktrace" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "Stacktrace" %}</div></a>
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/details/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "event-details" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "Event&nbsp;Details" %}</div></a>
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/{% if event %}{{ event.id }}{% else %}last{% endif %}/breadcrumbs/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "breadcrumbs" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "Breadcrumbs" %}</div></a>
+            <div class="border-l border-slate-200 dark:border-slate-700 mx-1 my-1"></div>
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/tags/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "tags" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "Tags" %}</div></a>
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/grouping/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "grouping" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "Grouping" %}</div></a>
+            <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/history/{% current_qs %}"><div class="px-3 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 {% if tab == "history" %}text-cyan-500 dark:text-cyan-300 border-cyan-500 border-b-2{% else %}text-slate-500 border-slate-400 hover:border-b-2{% endif %}">{% translate "History" %}</div></a>
         </div>
 
         <div class="m-4"><!-- div for tab_content -->
@@ -132,9 +145,8 @@
         {% endblock %}
         </div>
 
-        <div class="flex p-4 bg-slate-200 dark:bg-slate-800 border-b-2"><!-- bottom nav bar -->
-            {% if is_event_page %}<div>{% blocktranslate with digest_order=event.digest_order|intcomma total_events=issue.digested_event_count|intcomma ingested_at=event.ingested_at|date:"j M G:i T" %}Event {{ digest_order }} of {{ total_events }} which occured at <span class="font-bold">{{ ingested_at }}</span>{% endblocktranslate %}</div>{% endif %}
-            <div class="ml-auto pr-4 font-bold text-slate-500 dark:text-slate-300">
+        <div class="flex px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700"><!-- bottom nav bar -->
+            <div class="ml-auto text-sm text-slate-500 dark:text-slate-300">
                 {% if is_event_page %}
                 <a href="{{ script_prefix }}/events/event/{{ event.id }}/download/">{% translate "Download" %}</a>
                 | <a href="{{ script_prefix }}/events/event/{{ event.id }}/raw/" >{% translate "JSON" %}</a>
@@ -152,12 +164,13 @@
             </div>
         </div>{# bottom nav bar #}
     </div>{# the whole of the big tabbed view #}
+    {% endblock %}{# main_panel #}
 
     <div class="w-128 hidden xl:flex flex-auto flex-col">{# RHS container for multiple stacked boxes #}
 
-        <div class="border-2 mb-4 mr-4"><!-- "issue: key info" box -->
-            <div class="font-bold border-b-2">
-                <div class="p-4 border-slate-50 dark:border-slate-900 text-slate-500 dark:text-slate-300"> {# div-in-div to match the spacing of the tabs, which is caused by the hover-thick-line; we use border-2 on both sides rather than border-b-4 to get the text aligned centeredly #}
+        <div class="border border-slate-200 dark:border-slate-700 rounded-lg mb-4 mr-4"><!-- "issue: key info" box -->
+            <div class="font-semibold border-b border-slate-200 dark:border-slate-700">
+                <div class="px-3 py-2 text-sm text-slate-500 dark:text-slate-300">
                 Issue Key Info
                 </div>
             </div>
@@ -238,9 +251,9 @@
         </div>
 
         {% if tab != "tags" and issue.tags_summary %}
-        <div class="border-2 mb-4 mr-4"><!-- "issue: tags" box -->
-            <div class="font-bold border-b-2">
-                <div class="p-4 border-slate-50 dark:border-slate-900 text-slate-500 dark:text-slate-300">
+        <div class="border border-slate-200 dark:border-slate-700 rounded-lg mb-4 mr-4"><!-- "issue: tags" box -->
+            <div class="font-semibold border-b border-slate-200 dark:border-slate-700">
+                <div class="px-3 py-2 text-sm text-slate-500 dark:text-slate-300">
                 {% translate "Issue Tags" %}
                 </div>
             </div>

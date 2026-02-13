@@ -94,11 +94,15 @@ def project_list(request, ownership_filter=None):
     else:
         raise ValueError(f"Invalid ownership_filter: {ownership_filter}")
 
+    now = timezone.now()
     project_list = base_qs.annotate(
-        # open_issue_count disabled, it's too expensive
-        # open_issue_count=models.Count('issue', filter=models.Q(issue__is_resolved=False, issue__is_muted=False)),
         member_count=models.Count(
             'projectmembership', distinct=True, filter=models.Q(projectmembership__accepted=True)),
+        issue_count=models.Count('issue', distinct=True),
+        issue_count_24h=models.Count(
+            'issue', distinct=True, filter=models.Q(issue__first_seen__gte=now - timedelta(hours=24))),
+        event_count_24h=models.Count(
+            'event', distinct=True, filter=models.Q(event__ingested_at__gte=now - timedelta(hours=24))),
     ).select_related('team')
 
     if ownership_filter == "mine":
