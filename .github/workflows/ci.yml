@@ -230,8 +230,8 @@ jobs:
           # 3) HEAD / and check redirect to /teams/
           curl -sS -b cookies.txt -I http://localhost:8000/ > headers_root.txt
 
-          if ! grep -qi '^Location: /teams/' headers_root.txt; then
-            echo "Expected redirect to /teams/ not found"
+          if ! grep -qi '^Location: /dashboard/' headers_root.txt; then
+            echo "Expected redirect to /dashboard/ not found"
             echo "--- / (status + Location):"
             sed -n '1p;/^Location:/Ip' headers_root.txt
             echo "--- cookies (names):"
@@ -239,7 +239,7 @@ jobs:
             exit 1
           fi
 
-          echo "Login OK and / redirects to /teams/"
+          echo "Login OK and / redirects to /dashboard/"
 
   docker-build-push:
     runs-on: ubuntu-latest
