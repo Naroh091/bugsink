@@ -149,8 +149,8 @@ class FilesTests(TransactionTestCase):
                     filename, response.content if response.status_code != 302 else response.url))
 
         for event_id, key_phrase in [
-                ("af4d4093e2d548bea61683abecb8ee95", '<span class="font-bold">captureException.js</span> in <span class="font-bold">foo</span> line <span class="font-bold">15</span>'),  # noqa
-                ("ed483af389554d9cac475049ed9f560f", '<span class="font-bold">captureException.js</span> in <span class="font-bold">foo</span> line <span class="font-bold">10</span>'),  # noqa
+                ("af4d4093e2d548bea61683abecb8ee95", '<span class="font-semibold text-slate-800 dark:text-slate-100">captureException.js</span> <span class="text-slate-400 dark:text-slate-500">in</span> <span class="font-semibold text-cyan-700 dark:text-cyan-300">foo</span> <span class="text-slate-400 dark:text-slate-500">at line</span> <span class="font-semibold text-slate-800 dark:text-slate-100">15</span>'),  # noqa
+                ("ed483af389554d9cac475049ed9f560f", '<span class="font-semibold text-slate-800 dark:text-slate-100">captureException.js</span> <span class="text-slate-400 dark:text-slate-500">in</span> <span class="font-semibold text-cyan-700 dark:text-cyan-300">foo</span> <span class="text-slate-400 dark:text-slate-500">at line</span> <span class="font-semibold text-slate-800 dark:text-slate-100">10</span>'),  # noqa
                     ]:
 
             event = Event.objects.get(event_id=event_id)
