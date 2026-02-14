@@ -22,7 +22,7 @@ Filters are applied via URL parameters, so filtered views can be bookmarked and 
 
 Select one or more issues using the checkboxes and apply batch operations:
 
-- **Resolve** -- Mark selected issues as resolved.
+- **Resolved in next release** -- Mark selected issues as resolved in the next release. If new events arrive for the current release the issue will reopen (regress), but events for the next release will not reopen it. A dropdown also offers a plain **Resolved** action that marks issues as resolved immediately regardless of releases.
 - **Mute** -- Mute issues for a specific duration or until a threshold is reached.
 - **Unmute** -- Remove the muted status from selected issues.
 - **Delete** -- Permanently delete selected issues (with confirmation).

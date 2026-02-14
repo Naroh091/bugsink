@@ -56,6 +56,7 @@
                         {% else %}
                             <button name="action" value="resolved_release:{{ issue.project.get_latest_release.version }}" disabled class="block self-stretch text-slate-300 dark:text-slate-600 border-slate-200 dark:border-slate-700 px-3.5 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 text-left whitespace-nowrap">Resolved in latest ({{ issue.project.get_latest_release.get_short_version }})</button>
                         {% endif %}
+                            <button name="action" value="resolve" class="block self-stretch text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">{% translate "Resolved" %}</button>
 
                     </div>
                 </div>
