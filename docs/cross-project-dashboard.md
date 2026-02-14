@@ -36,6 +36,7 @@ Each row in the dashboard shows:
 - Issue title (type and value)
 - Source location (filename and function from the last frame)
 - Parent project name
+- Evolution sparkline (14-day trend with 24-hour detail; see [sparkline-charts.md](sparkline-charts.md))
 - Last seen timestamp
 - Age (time since first seen)
 - Event count
