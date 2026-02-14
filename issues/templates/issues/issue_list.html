@@ -3,6 +3,7 @@
 {% load humanize %}
 {% load i18n %}
 {% load issues %}
+{% load sparkline %}
 
 {% block title %}{% translate "Issues" %} · {{ project.name }} · {{ site_title }}{% endblock %}
 
@@ -145,6 +146,7 @@
               </div>
           </div>
           <div class="flex-1">{% translate "Issue" %}</div>
+          <div class="hidden md:block w-48 text-center">{% translate "Evolution" %}</div>
           <div class="hidden sm:block w-28 text-right">{% translate "Last Seen" %}</div>
           <div class="hidden sm:block w-24 text-right">{% translate "Age" %}</div>
           <div class="hidden sm:block w-20 text-right pr-2">{% translate "Events" %}</div>
@@ -169,6 +171,9 @@
                             <span class="text-[10px]">({{ issue.stored_event_count|intcomma }}&thinsp;av)</span>
                         {% endif %}
                     </div>
+                </div>
+                <div class="hidden md:block w-48 text-center text-slate-400 dark:text-slate-500">
+                    {{ issue.sparkline_data|sparkline_svg }}
                 </div>
                 <div class="hidden sm:block w-28 text-right text-xs text-slate-500 dark:text-slate-400" title="{{ issue.last_seen|date:'N j, Y, P' }}">{{ issue.last_seen|shorttimesince }} ago</div>
                 <div class="hidden sm:block w-24 text-right text-xs text-slate-500 dark:text-slate-400" title="{{ issue.first_seen|date:'N j, Y, P' }}">{{ issue.first_seen|shorttimesince }}</div>

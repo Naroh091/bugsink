@@ -116,6 +116,12 @@ def project_list(request, ownership_filter=None):
             project_list_2.append(project)
         project_list = project_list_2
 
+    from events.sparkline import get_project_sparkline_data
+    project_ids = [p.id for p in project_list]
+    sparkline_data = get_project_sparkline_data(project_ids)
+    for project in project_list:
+        project.sparkline_data = sparkline_data.get(project.id, [0] * 38)
+
     return render(request, 'projects/project_list.html', {
         'can_create':
             request.user.is_superuser or TeamMembership.objects.filter(user=request.user, role=TeamRole.ADMIN).exists(),

@@ -322,6 +322,12 @@ def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    from events.sparkline import get_issue_sparkline_data
+    page_issue_ids = [issue.id for issue in page_obj.object_list]
+    sparkline_data = get_issue_sparkline_data(page_issue_ids)
+    for issue in page_obj.object_list:
+        issue.sparkline_data = sparkline_data.get(issue.id, [0] * 38)
+
     try:
         member = ProjectMembership.objects.get(project=project, user=request.user)
     except ProjectMembership.DoesNotExist:

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% load sparkline %}
 
 {% block title %}{% translate "Projects" %} · {{ site_title }}{% endblock %}
 
@@ -45,6 +46,7 @@
                 <div class="flex-1 min-w-0">{% translate "Project" %}</div>
                 <div class="w-20 text-right shrink-0">{% translate "Issues" %}</div>
                 <div class="w-20 text-right shrink-0">{% translate "Events" %}</div>
+                <div class="hidden lg:block w-48 text-center shrink-0">{% translate "Evolution" %}</div>
                 <div class="w-20 text-right shrink-0">{% translate "Actions" %}</div>
             </div>
 
@@ -73,6 +75,9 @@
                 <div class="hidden sm:block w-20 text-right shrink-0 text-xs">
                     <div class="font-semibold text-sm text-slate-700 dark:text-slate-200">+{{ project.event_count_24h }}</div>
                     <div class="text-slate-400 dark:text-slate-500">{{ project.digested_event_count }} {% translate "total" %}</div>
+                </div>
+                <div class="hidden lg:block w-48 text-center shrink-0 text-slate-400 dark:text-slate-500">
+                    {{ project.sparkline_data|sparkline_svg }}
                 </div>
 
                 <div class="w-20 shrink-0 flex justify-end relative">

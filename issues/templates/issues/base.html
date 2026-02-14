@@ -5,6 +5,7 @@
 {% load stricter_templates %}
 {% load add_to_qs %}
 {% load i18n %}
+{% load sparkline %}
 
 {% block title %}{{ issue.title }} · {{ block.super }}{% endblock %}
 
@@ -220,6 +221,13 @@
                     {% else %}
                         </div>
                     {% endif %}
+                </div>
+
+                <div class="py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Evolution" %}</div>
+                    <div class="mt-1 text-slate-400 dark:text-slate-500">
+                        {% issue_sparkline issue.id %}
+                    </div>
                 </div>
 
                 {% if issue.digested_event_count > 1 %}
