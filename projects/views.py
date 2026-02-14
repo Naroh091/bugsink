@@ -21,7 +21,7 @@ from bugsink.decorators import login_exempt, atomic_for_request_method
 from bugsink.utils import assert_
 
 from alerts.models import MessagingServiceConfig, get_alert_service_backend_class, get_alert_service_kind_choices
-from alerts.forms import MessagingServiceConfigNewForm, MessagingServiceConfigEditForm
+from alerts.forms import MessagingServiceConfigNewForm
 
 from .models import Project, ProjectMembership, ProjectRole, ProjectVisibility
 from .forms import ProjectMembershipForm, MyProjectMembershipForm, ProjectMemberInviteForm, ProjectForm
