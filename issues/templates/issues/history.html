@@ -5,37 +5,30 @@
 
 {% block tab_content %}
 
-<h1 class="text-2xl font-bold text-ellipsis whitespace-nowrap overflow-hidden">{% translate "History" %}</h1>
-<div class="italic">{% translate "Most recent first" %}</div>
+<div class="flex items-baseline mt-4 mb-2">
+    <h2 class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{% translate "History" %}</h2>
+    <span class="ml-2 text-xs text-slate-400 dark:text-slate-500 italic">{% translate "Most recent first" %}</span>
+</div>
 
 
     <div class="flex"><!-- single turningpoint (for 'your comments')-->
         <div class="flex-none">
-            <div class="pt-8 pr-2">
-                <img class="w-12 h-12 rounded-full border-2 border-slate-300 dark:border-slate-600" src="https://gravatar.com/avatar/{{ request.user|gravatar_sha }}?s=48&d=robohash" alt="{{ request.user|best_displayname }}">
+            <div class="pt-6 pr-3">
+                <img class="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-600" src="https://gravatar.com/avatar/{{ request.user|gravatar_sha }}?s=48&d=robohash" alt="{{ request.user|best_displayname }}">
             </div>
         </div>
-        <div class="border-slate-300 dark:border-slate-600 border-2 rounded-md mt-6 flex-auto"><!-- the "your comments balloon" -->
-            <div class="pl-4 flex triangle-left"><!-- 'header' row -->
-                <div class="mt-4 mb-4">
-                    <span class="font-bold text-slate-800 dark:text-slate-100 italic">{% translate "Add comment as manual annotation" %}</span>
-                </div>
-
-                <div class="ml-auto flex"> <!-- 'header' row right side -->
-                    <div class="p-4">
-                        {% translate "Now" %}
-                    </div>
-                </div>
+        <div class="border border-slate-200 dark:border-slate-700 rounded-lg mt-4 flex-auto overflow-hidden"><!-- the "your comments balloon" -->
+            <div class="px-4 py-3 flex items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 triangle-left"><!-- 'header' row -->
+                <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">{% translate "Add comment as manual annotation" %}</span>
+                <span class="ml-auto text-xs text-slate-400 dark:text-slate-500">{% translate "Now" %}</span>
             </div>
 
-            <div class="border-t-2 pl-4 pr-4 pb-4 border-slate-300 dark:border-slate-600">{# 'body' part of the balloon (separated by a line) #}
-                    <div class="mt-4">
+            <div class="px-4 py-4">{# 'body' part of the balloon (separated by a line) #}
                     <form action="{% url "history_comment_new" issue_pk=issue.id %}" method="post">
                     {% csrf_token %}
-                    <textarea name="comment" placeholder="{% translate 'comments...' %}" class="bg-slate-50 dark:bg-slate-800 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-200 dark:focus:ring-cyan-700 rounded-md w-full h-32" onkeypress="submitOnCtrlEnter(event)"></textarea>
-                    <button class="font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 mt-2 border-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3">{% translate "Post comment" %}</button>
+                    <textarea name="comment" placeholder="{% translate 'comments...' %}" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-200 dark:focus:ring-cyan-700 rounded-md w-full h-28 text-sm" onkeypress="submitOnCtrlEnter(event)"></textarea>
+                    <button class="text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-1.5 mt-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 active:ring-3">{% translate "Post comment" %}</button>
                     </form>
-                    </div>
                 </div>{# 'body' part of the balloon #}
         </div><!-- the "balloon" -->
     </div><!-- single turningpoint -->
@@ -44,53 +37,47 @@
 {% for turningpoint in issue.turningpoint_set_all %}
     <div class="flex" id="comment-{{ turningpoint.id }}"><!-- single turningpoint -->
         <div class="flex-none">
-            <div class="pt-8 pr-2">
+            <div class="pt-6 pr-3">
                 {% if turningpoint.user_id %}
-                <img class="w-12 h-12 rounded-full border-2 border-slate-300 dark:border-slate-600" src="https://gravatar.com/avatar/{{ turningpoint.user|gravatar_sha }}?s=48&d=robohash" alt="{{ turningpoint.user|best_displayname }}">
+                <img class="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-600" src="https://gravatar.com/avatar/{{ turningpoint.user|gravatar_sha }}?s=48&d=robohash" alt="{{ turningpoint.user|best_displayname }}">
                 {% else %}
-                <img class="w-12 h-12 rounded-full border-2 border-slate-300 dark:border-slate-600" src="{% static 'images/bugsink-logo.png' %}" alt="Bugsink">
+                <img class="w-10 h-10 rounded-full border-2 border-slate-200 dark:border-slate-600" src="{% static 'images/bugsink-logo.png' %}" alt="Bugsink">
                 {% endif %}
             </div>
         </div>
 
-        <div class="border-slate-300 dark:border-slate-600 border-2 rounded-md mt-6 flex-auto js-balloon"><!-- the "balloon" -->
-            <div class="pl-4 flex triangle-left"><!-- 'header' row -->
-                <div class="mt-4 mb-4">
-                    <span class="font-bold text-slate-800 dark:text-slate-100">{{ turningpoint.get_kind_display }}</span> {% translate "by" context "History" %}
-                    <span class="font-bold text-slate-800 dark:text-slate-100">{% if turningpoint.user_id %}{{ turningpoint.user|best_displayname }}{% else %}Bugsink{% endif %}</span>
+        <div class="border border-slate-200 dark:border-slate-700 rounded-lg mt-4 flex-auto overflow-hidden js-balloon"><!-- the "balloon" -->
+            <div class="px-4 py-3 flex items-center triangle-left border-b border-slate-200 dark:border-slate-700 {% if turningpoint.kind == 1 %}bg-blue-50 dark:bg-blue-900/20{% elif turningpoint.kind == 2 or turningpoint.kind == 10 %}bg-emerald-50 dark:bg-emerald-900/20{% elif turningpoint.kind == 3 %}bg-amber-50 dark:bg-amber-900/20{% elif turningpoint.kind == 4 %}bg-red-50 dark:bg-red-900/20{% elif turningpoint.kind == 5 %}bg-cyan-50 dark:bg-cyan-900/20{% elif turningpoint.kind == 100 %}bg-slate-50 dark:bg-slate-800/50{% else %}bg-slate-50 dark:bg-slate-800/50{% endif %}"><!-- 'header' row -->
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if turningpoint.kind == 1 %}bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300{% elif turningpoint.kind == 2 or turningpoint.kind == 10 %}bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300{% elif turningpoint.kind == 3 %}bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300{% elif turningpoint.kind == 4 %}bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300{% elif turningpoint.kind == 5 %}bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300{% else %}bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300{% endif %}">{{ turningpoint.get_kind_display }}</span>
+                    <span class="text-sm text-slate-500 dark:text-slate-400">{% translate "by" context "History" %}
+                    <span class="font-semibold text-slate-800 dark:text-slate-100">{% if turningpoint.user_id %}{{ turningpoint.user|best_displayname }}{% else %}Bugsink{% endif %}</span></span>
 
                     {% if turningpoint.user_id == request.user.id %}
-                    <span class="text-slate-500 dark:text-slate-300 pl-1" onclick="toggleCommentEditable(this)" title="Edit comment">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 inline">
+                    <span class="text-slate-400 dark:text-slate-500 cursor-pointer hover:text-slate-600 dark:hover:text-slate-300" onclick="toggleCommentEditable(this)" title="Edit comment">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5 inline">
   <path fill-rule="evenodd" d="M11.013 2.513a1.75 1.75 0 0 1 2.475 2.474L6.226 12.25a2.751 2.751 0 0 1-.892.596l-2.047.848a.75.75 0 0 1-.98-.98l.848-2.047a2.75 2.75 0 0 1 .596-.892l7.262-7.261Z" clip-rule="evenodd" />
 </svg>
 
                     </span>
                     {% if turningpoint.kind == 100 %}
-                    <span class="text-slate-500 dark:text-slate-300 pl-1" onclick="deleteComment('{% url "history_comment_delete" issue_pk=issue.id comment_pk=turningpoint.pk %}')" title="Delete comment">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 inline">
+                    <span class="text-slate-400 dark:text-slate-500 cursor-pointer hover:text-red-500 dark:hover:text-red-400" onclick="deleteComment('{% url "history_comment_delete" issue_pk=issue.id comment_pk=turningpoint.pk %}')" title="Delete comment">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5 inline">
   <path fill-rule="evenodd" d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z" clip-rule="evenodd" />
 </svg>
-
 
                     </span>
                     {% endif %}
                     {% endif %}
-
                 </div>
 
-                <div class="ml-auto flex"> <!-- 'header' row right side -->
-
-                    <div class="p-4 text-right">
-                        {{ turningpoint.timestamp|date:"j M G:i T"  }}
-                    </div>
-                </div>
+                <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">{{ turningpoint.timestamp|date:"j M G:i T"  }}</span>
             </div>
 
             {% if turningpoint.parsed_metadata or turningpoint.triggering_event_id or turningpoint.comment or turningpoint.user_id == request.user.id %}  {# the last clause means: editable, hence space must be reserved #}
-            <div class="border-t-2 pl-4 pr-4 pb-4 border-slate-300 dark:border-slate-600">{# 'body' part of the balloon (separated by a line) #}
-                    <div class="mt-4">
-                        <div class="js-comment-plain">
+            <div class="px-4 py-4">{# 'body' part of the balloon (separated by a line) #}
+                    <div>
+                        <div class="js-comment-plain text-sm text-slate-700 dark:text-slate-300">
                         {{ turningpoint.comment|linebreaksbr }}
                         </div>
 
@@ -98,15 +85,15 @@
                         <div class="js-comment-editable hidden">
                             <form action="{% url "history_comment_edit" issue_pk=issue.id comment_pk=turningpoint.pk %}" method="post">
                             {% csrf_token %}
-                            <textarea name="comment" placeholder="comments..." class="bg-slate-50 dark:bg-slate-800 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-200 dark:focus:ring-cyan-700 rounded-md w-full h-32" onkeypress="submitOnCtrlEnter(event)">{{ turningpoint.comment }}</textarea>{# note: we don't actually use {{ form.comments }} here; this means the show-red-on-invalid loop won't work but since everything is valid and we haven't implemented the other parts of that loop that's fine #}
-                            <button class="font-bold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 pl-4 pr-4 pb-2 pt-2 mt-2 border-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3">Update comment</button>
+                            <textarea name="comment" placeholder="comments..." class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-200 dark:focus:ring-cyan-700 rounded-md w-full h-28 text-sm" onkeypress="submitOnCtrlEnter(event)">{{ turningpoint.comment }}</textarea>{# note: we don't actually use {{ form.comments }} here; this means the show-red-on-invalid loop won't work but since everything is valid and we haven't implemented the other parts of that loop that's fine #}
+                            <button class="text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-1.5 mt-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 active:ring-3">Update comment</button>
                             </form>
                         </div>
                         {% endif %}
                     </div>
 
                 {% if turningpoint.parsed_metadata %}
-                <div class="mt-4">
+                <div class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                     {% if turningpoint.kind == 3 %} {# muted #}
                         {% if turningpoint.parsed_metadata.mute_unconditionally %}
                             Muted unconditionally.
@@ -150,8 +137,11 @@
                 {% endif %}
 
                 {% if turningpoint.triggering_event_id %}
-                <div class="mt-4">
-                    <a href="{% url "event_by_id" event_pk=turningpoint.triggering_event_id %}" class="underline decoration-dotted font-bold text-slate-500 dark:text-slate-300">Triggering event</a>
+                <div class="mt-3">
+                    <a href="{% url "event_by_id" event_pk=turningpoint.triggering_event_id %}" class="inline-flex items-center text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5 mr-1"><path fill-rule="evenodd" d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95l-2 2a3.5 3.5 0 0 1-5.396-4.402.75.75 0 0 1 1.251.827 2 2 0 0 0 3.085 2.514l2-2a2 2 0 0 0 0-2.828.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.5 3.5 0 0 1 0-4.95l2-2a3.5 3.5 0 0 1 5.396 4.402.75.75 0 0 1-1.251-.827 2 2 0 0 0-3.085-2.514l-2 2a2 2 0 0 0 0 2.828.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" /></svg>
+                        Triggering event
+                    </a>
                 </div>
                 {% endif %}
 

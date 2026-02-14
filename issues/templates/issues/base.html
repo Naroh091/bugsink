@@ -170,30 +170,31 @@
     <div class="w-128 hidden xl:flex flex-auto flex-col">{# RHS container for multiple stacked boxes #}
 
         <div class="border border-slate-200 dark:border-slate-700 rounded-lg mb-4 mr-4"><!-- "issue: key info" box -->
-            <div class="font-semibold border-b border-slate-200 dark:border-slate-700">
-                <div class="px-3 py-2 text-sm text-slate-500 dark:text-slate-300">
+            <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 rounded-t-lg">
+                <div class="px-4 py-2.5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Issue Key Info
                 </div>
             </div>
 
-            <div class="p-4">
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "Issue" %} #</div>
-                    <div>{{ issue.friendly_id }} </div>
+            <div class="px-4 py-1">
+                <div class="py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Issue" %} #</div>
+                    <div class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ issue.friendly_id }} </div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "State" %}</div>
-                    <div>
+                <div class="py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "State" %}</div>
+                    <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">
                         {% if issue.is_resolved %}
-                            {% translate "Resolved" %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{% translate "Resolved" %}</span>
                             {% for version in issue.get_fixed_at %}
-                                {% if forloop.first %}{% translate "in" %}{% endif %}
-                                <span {% if version|issha %}class="font-mono"{% endif %}>{{ version|shortsha }}{% if not forloop.last %}</span>,{% endif %}
+                                {% if forloop.first %}<span class="ml-1 text-xs text-slate-500 dark:text-slate-400">{% translate "in" %}{% endif %}
+                                <span {% if version|issha %}class="font-mono"{% endif %}>{{ version|shortsha }}{% if not forloop.last %}</span>,{% else %}</span></span>{% endif %}
                             {% endfor %}
                         {% else %}
                             {% if issue.is_muted %}
-                                {% translate "Muted" %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">{% translate "Muted" %}</span>
+                                <span class="block mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 {% if issue.unmute_after %}
                                     until {{ issue.unmute_after|date:"j M G:i T" }}.
                                 {% elif issue.get_unmute_on_volume_based_conditions %}
@@ -203,44 +204,45 @@
                                 {% else %}
                                     (unconditionally).
                                 {% endif %}
+                                </span>
                             {% else %}
-                                {% translate "Open" %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">{% translate "Open" %}</span>
                             {% endif %}
                         {% endif %}
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "Nr. of events" %}:</div>
-                    <div>{{ issue.digested_event_count|intcomma }}
+                <div class="py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Nr. of events" %}</div>
+                    <div class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ issue.digested_event_count|intcomma }}
                     {% if issue.digested_event_count != issue.stored_event_count %}
-                        total seen</div><div>{{ issue.stored_event_count|intcomma }} available</div>
+                        <span class="font-normal text-slate-500 dark:text-slate-400">total seen</span></div><div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ issue.stored_event_count|intcomma }} <span class="font-normal text-slate-500 dark:text-slate-400">available</span></div>
                     {% else %}
                         </div>
                     {% endif %}
                 </div>
 
                 {% if issue.digested_event_count > 1 %}
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "First seen" %}:</div>
-                    <div>{{ issue.first_seen|date:"j M G:i T" }}</div>
+                <div class="py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "First seen" %}</div>
+                    <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ issue.first_seen|date:"j M G:i T" }}</div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "Last seen" %}:</div>
-                    <div>{{ issue.last_seen|date:"j M G:i T" }}</div>
+                <div class="py-3{% if issue.get_events_at_2 %} border-b border-slate-100 dark:border-slate-700/50{% endif %}">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Last seen" %}</div>
+                    <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ issue.last_seen|date:"j M G:i T" }}</div>
                 </div>
                 {% else %}
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{% translate "Seen at" %}:</div>
-                    <div>{{ issue.first_seen|date:"j M G:i T" }}</div>
+                <div class="py-3{% if issue.get_events_at_2 %} border-b border-slate-100 dark:border-slate-700/50{% endif %}">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Seen at" %}</div>
+                    <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ issue.first_seen|date:"j M G:i T" }}</div>
                 </div>
                 {% endif %}
 
                 {% if issue.get_events_at_2 %}
-                <div class="mb-4">
-                    <div class="text-sm font-bold text-slate-500 dark:text-slate-300">Seen in releases:</div>
-                    <div>
+                <div class="py-3">
+                    <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Seen in releases</div>
+                    <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">
                     {% for version in issue.get_events_at_2 %}
                         <span {% if version|issha %}class="font-mono"{% endif %}>{{ version|shortsha }}{% if not forloop.last %}</span>,{% endif %}
                     {% endfor %}
@@ -253,25 +255,25 @@
 
         {% if tab != "tags" and issue.tags_summary %}
         <div class="border border-slate-200 dark:border-slate-700 rounded-lg mb-4 mr-4"><!-- "issue: tags" box -->
-            <div class="font-semibold border-b border-slate-200 dark:border-slate-700">
-                <div class="px-3 py-2 text-sm text-slate-500 dark:text-slate-300">
+            <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 rounded-t-lg">
+                <div class="px-4 py-2.5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 {% translate "Issue Tags" %}
                 </div>
             </div>
-            <div class="p-4">
+            <div class="px-4 py-1">
                 {% for issuetags in issue.tags_summary %}
-                    <div class="mb-4">
-                        <div class="text-sm font-bold text-slate-500 dark:text-slate-300">{{ issuetags.0.key.key }}:</div>
-                        <div>
+                    <div class="py-3{% if not forloop.last %} border-b border-slate-100 dark:border-slate-700/50{% endif %}">
+                        <div class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{{ issuetags.0.key.key }}</div>
+                        <div class="mt-1 text-sm text-slate-700 dark:text-slate-200">
                         {% for issuetag in issuetags %}
-                            <span>{{ issuetag.value.value }} <span class="text-xs">({{ issuetag.pct }}%)</span>{% if not forloop.last %}</span>,{% endif %}
+                            <span>{{ issuetag.value.value }} <span class="text-xs text-slate-400 dark:text-slate-500">({{ issuetag.pct }}%)</span>{% if not forloop.last %}</span>,{% endif %}
                         {% endfor %}
                         </div>
                     </div>
                 {% endfor %}
-
-                <div class="text-sm font-bold italic text-slate-500 dark:text-slate-300"><a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/tags/{% current_qs %}">{% translate "All tags..." %}</a></div>
-
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 rounded-b-lg px-4 py-2.5 text-center">
+                <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/tags/{% current_qs %}" class="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-300 uppercase tracking-wider">{% translate "All tags..." %}</a>
             </div>
         </div>
         {% endif %}

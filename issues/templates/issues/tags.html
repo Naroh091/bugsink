@@ -1,40 +1,45 @@
 {% extends "issues/base.html" %}
 {% load static %}
 {% load i18n %}
+{% load humanize %}
 
 {% block tab_content %}
 
     {% for issuetags in issue.tags_all %}
 
-        <h1 id="{{ issuetags.0.key.key }}" class="text-2xl font-bold mt-4">{{ issuetags.0.key.key }}:</h1>
-
-        <div class="mb-6">
-            {% for issuetag in issuetags %}
-
-                <div class="flex {% if forloop.first %}border-slate-300 dark:border-slate-600 border-t-2{% endif %}">
-                    <div class="w-2/3 {% if not forloop.last %}border-b-2 border-dotted border-slate-300 dark:border-slate-600{% endif %}">{{ issuetag.value.value }}</div>
-                    <div class="w-1/6 pr-4 flex items-stretch {% if not forloop.last %}border-b-2 border-dotted border-slate-300 dark:border-slate-600{% endif %}">
-                        <div class="bg-slate-200 dark:bg-slate-600" style="width: {{ issuetag.pct }}%;">
-                             <span class="absolute pl-1 whitespace-nowrap">
-                              {{ issuetag.pct }}%
-                            </span>
-                        </div>
-                    </div>
-                    <div class="w-1/6 {% if not forloop.last %} border-b-2 border-dotted border-slate-300 dark:border-slate-600{% endif %} font-mono">{{ issuetag.count }} events</div>
-                </div>
-            {% endfor %}
+    <div class="mt-4 mb-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700">
+            <h2 id="{{ issuetags.0.key.key }}" class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ issuetags.0.key.key }}</h2>
         </div>
-    {% empty %}
-        <h1 class="text-2xl font-bold mt-4">No tags</h1>
 
-        <div class="mb-6">
+        {% for issuetag in issuetags %}
+            <div class="flex items-center px-4 py-2.5 {% if not forloop.last %}border-b border-slate-100 dark:border-slate-700/50{% endif %} hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <div class="flex-1 text-sm text-slate-800 dark:text-slate-200">{{ issuetag.value.value }}</div>
+                <div class="w-32 mx-4">
+                    <div class="h-5 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden relative">
+                        <div class="h-full bg-slate-300 dark:bg-slate-500 rounded" style="width: {{ issuetag.pct }}%;"></div>
+                        <span class="absolute inset-y-0 left-2 flex items-center text-xs font-medium {% if issuetag.pct > 30 %}text-slate-700 dark:text-slate-100{% else %}text-slate-600 dark:text-slate-300{% endif %}">{{ issuetag.pct }}%</span>
+                    </div>
+                </div>
+                <div class="w-20 text-right text-xs text-slate-400 dark:text-slate-500 font-mono shrink-0">{{ issuetag.count|intcomma }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% empty %}
+    <div class="mt-4 mb-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tags</h2>
+        </div>
+        <div class="px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
             {% trans "No tags found for this issue." %}
         </div>
+    </div>
 
     {% endfor %}
 
     {% if issue.digested_event_count > 25 %}
-        <div class="mt-4 italic">
+        <div class="mt-2 mb-4 text-xs text-slate-400 dark:text-slate-500 italic">
             Note: Tags which have values that are mostly unique per event (such as <span class="not-italic">trace, user, browser version and os version</span>) are not displayed here.
         </div>
     {% endif %}
