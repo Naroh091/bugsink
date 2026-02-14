@@ -209,10 +209,10 @@ class DiscordBackend:
     def get_form_class(cls):
         return DiscordConfigForm
 
-    def send_test_message(self):
+    def send_test_message(self, project_name=None):
         discord_backend_send_test_message.delay(
             json.loads(self.service_config.config)["webhook_url"],
-            self.service_config.project.name,
+            project_name or self.service_config.team.name,
             self.service_config.display_name,
             self.service_config.id,
         )

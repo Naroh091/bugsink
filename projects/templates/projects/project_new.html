@@ -20,6 +20,26 @@
         {% tailwind_formfield form.visibility %}
         {% tailwind_formfield form.retention_max_event_count %}
 
+        {% for team_id, services in team_services.items %}
+        <div class="team-services-block hidden" data-team-id="{{ team_id }}">
+            {% if services %}
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{% translate "Attach messaging services" %}</label>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mb-2">{% translate "Click to select which of your team's messaging services should receive alerts for this project." %}</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for service in services %}
+                    <span class="service-badge cursor-pointer select-none inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors" data-service-id="{{ service.id }}">
+                        <input type="hidden" name="attach_services" value="{{ service.id }}" disabled>
+                        {{ service.display_name }}
+                        <span class="text-xs text-slate-400 dark:text-slate-500 ml-1">({{ service.get_kind_display }})</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
         <div class="flex items-center gap-3 mt-2">
             <button name="action" value="invite" class="font-semibold text-sm text-slate-800 dark:text-slate-100 border border-slate-500 dark:border-slate-400 px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-md">{% translate "Save" %}</button>
             <a href="{% url "project_list" %}" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">{% translate "Cancel" %}</a>
@@ -30,4 +50,46 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const teamSelect = document.querySelector('select[name="team"]');
+    if (!teamSelect) return;
+
+    const blocks = document.querySelectorAll('.team-services-block');
+
+    function updateServiceBlocks() {
+        const selectedTeamId = teamSelect.value;
+        blocks.forEach(block => {
+            const isActive = (block.dataset.teamId === selectedTeamId);
+            block.classList.toggle('hidden', !isActive);
+            block.querySelectorAll('input[name="attach_services"]').forEach(input => {
+                if (!isActive) input.disabled = true;
+            });
+        });
+    }
+
+    // Badge click toggle
+    document.querySelectorAll('.service-badge').forEach(badge => {
+        badge.addEventListener('click', function () {
+            const input = this.querySelector('input[name="attach_services"]');
+            const isSelected = !input.disabled;
+            if (isSelected) {
+                input.disabled = true;
+                this.classList.remove('bg-slate-300', 'dark:bg-slate-600', 'border-slate-500', 'dark:border-slate-400', 'text-slate-800', 'dark:text-slate-200');
+                this.classList.add('bg-slate-100', 'dark:bg-slate-800', 'border-slate-300', 'dark:border-slate-600', 'text-slate-600', 'dark:text-slate-400');
+            } else {
+                input.disabled = false;
+                this.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'border-slate-300', 'dark:border-slate-600', 'text-slate-600', 'dark:text-slate-400');
+                this.classList.add('bg-slate-300', 'dark:bg-slate-600', 'border-slate-500', 'dark:border-slate-400', 'text-slate-800', 'dark:text-slate-200');
+            }
+        });
+    });
+
+    updateServiceBlocks();
+    teamSelect.addEventListener('change', updateServiceBlocks);
+});
+</script>
 {% endblock %}

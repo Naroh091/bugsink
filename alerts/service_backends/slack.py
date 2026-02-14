@@ -237,11 +237,11 @@ class SlackBackend:
     def get_form_class(cls):
         return SlackConfigForm
 
-    def send_test_message(self):
+    def send_test_message(self, project_name=None):
         config = json.loads(self.service_config.config)
         slack_backend_send_test_message.delay(
             config["webhook_url"],
-            self.service_config.project.name,
+            project_name or self.service_config.team.name,
             self.service_config.display_name,
             self.service_config.id,
         )

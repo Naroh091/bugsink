@@ -11,6 +11,7 @@ from tags.models import store_tags
 from issues.models import TurningPoint, TurningPointKind
 from alerts.models import MessagingServiceConfig
 from releases.models import Release
+from teams.models import Team
 
 from .tasks import get_model_topography_with_project_override
 
@@ -21,7 +22,8 @@ class ProjectDeletionTestCase(TransactionTestCase):
 
     def setUp(self):
         super().setUp()
-        self.project = Project.objects.create(name="Test Project", stored_event_count=1)  # 1, in prep. of the below
+        self.team = Team.objects.create(name="Test Team")
+        self.project = Project.objects.create(name="Test Project", stored_event_count=1, team=self.team)
         self.issue, _ = get_or_create_issue(self.project)
         self.event = create_event(self.project, issue=self.issue)
         self.user = User.objects.create_user(username='test', password='test')
@@ -31,7 +33,8 @@ class ProjectDeletionTestCase(TransactionTestCase):
             issue=self.issue, triggering_event=self.event, timestamp=self.event.ingested_at,
             kind=TurningPointKind.FIRST_SEEN)
 
-        MessagingServiceConfig.objects.create(project=self.project)
+        service = MessagingServiceConfig.objects.create(team=self.team)
+        service.projects.add(self.project)
         ProjectMembership.objects.create(project=self.project, user=self.user)
         Release.objects.create(project=self.project, version="1.0.0")
 
@@ -49,7 +52,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
                   "issues.TurningPoint",
                   "events.Event",
                   "issues.Grouping",
-                  "alerts.MessagingServiceConfig",
                   "projects.ProjectMembership",
                   "releases.Release",
                   "issues.Issue",
@@ -120,7 +122,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
             (apps.get_model('tags', 'IssueTag'), 'value'),
             (apps.get_model('tags', 'EventTag'), 'project'),
             (apps.get_model('tags', 'IssueTag'), 'project'),
-            (apps.get_model('alerts', 'MessagingServiceConfig'), 'project'),
         ])
 
         self.assertEqual(walk(override, 'projects.Project'), [
@@ -131,7 +132,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
             (apps.get_model('issues', 'TurningPoint'), 'project'),
             (apps.get_model('events', 'Event'), 'project'),
             (apps.get_model('issues', 'Grouping'), 'project'),
-            (apps.get_model('alerts', 'MessagingServiceConfig'), 'project'),
             (apps.get_model('projects', 'ProjectMembership'), 'project'),
             (apps.get_model('releases', 'Release'), 'project'),
             (apps.get_model('issues', 'Issue'), 'project')

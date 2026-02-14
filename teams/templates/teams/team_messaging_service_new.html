@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+{% load tailwind_forms %}
+
+{% block title %}Messaging Service · {{ team.name }}  · {{ site_title }}{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-center">
+
+    <div class="m-4 max-w-lg w-full">
+        <form action="." method="post">
+        {% csrf_token %}
+
+        {% if messages %}
+        <ul class="mb-4">
+            {% for message in messages %}
+                <li class="bg-cyan-50 dark:bg-cyan-900 border border-cyan-300 dark:border-cyan-700 p-3 rounded-md text-sm">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-4 mb-1">Messaging Service</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">{{ team.name }}</p>
+
+        {% for field in form %}
+            {% tailwind_formfield field %}
+        {% endfor %}
+
+        {% for config_form_kind, config_form in config_forms.items %}
+            <div
+                class="config-form-block {% if config_form_kind == selected_config_form_kind %}block{% else %}hidden{% endif %}" data-config-kind="{{ config_form_kind }}">
+
+                {% for field in config_form %}
+                    {% tailwind_formfield field %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <div class="flex items-center gap-3 mt-2">
+            <button name="action" value="add" class="font-semibold text-sm text-slate-800 dark:text-slate-100 border border-slate-500 dark:border-slate-400 px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-md">Save</button>
+            <a href="{% url "team_alerts_setup" team_pk=team.pk %}" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">Cancel</a>
+        </div>
+
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const kindSelect = document.querySelector('select[name="kind"]');
+    const blocks = document.querySelectorAll('.config-form-block');
+
+    function updateConfigForms() {
+        const selectedKind = kindSelect.value;
+
+        blocks.forEach(block => {
+            const blockKind = block.dataset.configKind;
+            const isActive = (blockKind === selectedKind);
+
+            block.classList.toggle('hidden', !isActive);
+            block.classList.toggle('block', isActive);
+            block.querySelectorAll('input, select, textarea, button').forEach(element => {
+                element.disabled = !isActive;
+            });
+        });
+    }
+
+    updateConfigForms();  // Initialize on page load
+
+    kindSelect.addEventListener('change', updateConfigForms);
+});
+</script>
+{% endblock %}

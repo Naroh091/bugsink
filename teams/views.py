@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 from django.db import models
@@ -14,6 +15,9 @@ from django.utils.translation import gettext_lazy as _
 from users.models import EmailVerification
 from bugsink.app_settings import get_settings, CB_ANYBODY, CB_ADMINS, CB_MEMBERS
 from bugsink.decorators import login_exempt, atomic_for_request_method
+
+from alerts.models import MessagingServiceConfig, get_alert_service_backend_class, get_alert_service_kind_choices
+from alerts.forms import MessagingServiceConfigNewForm, MessagingServiceConfigEditForm
 
 from .models import Team, TeamMembership, TeamRole, TeamVisibility
 from .forms import TeamMemberInviteForm, TeamMembershipForm, MyTeamMembershipForm, TeamForm
@@ -360,6 +364,106 @@ def team_members_accept(request, team_pk):
         raise Http404("Invalid action")
 
     return render(request, "teams/team_members_accept.html", {"team": team, "membership": membership})
+
+
+def _check_team_admin(team, user):
+    if (not TeamMembership.objects.filter(team=team, user=user, role=TeamRole.ADMIN, accepted=True).exists() and
+            not user.is_superuser):
+        raise PermissionDenied("You are not an admin of this team")
+
+
+@atomic_for_request_method
+def team_alerts_setup(request, team_pk):
+    team = Team.objects.get(id=team_pk)
+    _check_team_admin(team, request.user)
+
+    if request.method == 'POST':
+        full_action_str = request.POST.get('action')
+        action, service_id = full_action_str.split(":", 1)
+        if action == "delete":
+            MessagingServiceConfig.objects.filter(team=team, id=service_id).delete()
+        elif action == "test":
+            service = MessagingServiceConfig.objects.get(team=team, id=service_id)
+            service_backend = service.get_backend()
+            service_backend.send_test_message()
+            messages.success(
+                request, "Test message sent; check the configured service to see if it arrived.")
+
+    service_configs = team.service_configs.prefetch_related('projects').all()
+
+    return render(request, 'teams/team_alerts_setup.html', {
+        'team': team,
+        'service_configs': service_configs,
+    })
+
+
+@atomic_for_request_method
+def team_messaging_service_add(request, team_pk):
+    team = Team.objects.get(id=team_pk)
+    _check_team_admin(team, request.user)
+
+    config_forms = {
+        kind: get_alert_service_backend_class(kind).get_form_class()()
+        for (kind, _) in get_alert_service_kind_choices()
+    }
+
+    if request.method == 'POST':
+        form = MessagingServiceConfigNewForm(team, request.POST)
+        kind = form.data.get('kind') or form.fields['kind'].initial
+        config_form = get_alert_service_backend_class(kind).get_form_class()(data=request.POST)
+        config_forms[kind] = config_form
+
+        if form.is_valid():
+            if config_form.is_valid():
+                service = form.save(commit=False)
+                service.config = json.dumps(config_form.get_config())
+                service.save()
+
+                messages.success(request, "Messaging service added successfully.")
+                return redirect('team_alerts_setup', team_pk=team_pk)
+
+    else:
+        form = MessagingServiceConfigNewForm(team)
+        kind = form.fields['kind'].initial
+
+    return render(request, 'teams/team_messaging_service_new.html', {
+        'team': team,
+        'form': form,
+        'config_forms': config_forms,
+        'selected_config_form_kind': kind,
+    })
+
+
+@atomic_for_request_method
+def team_messaging_service_edit(request, team_pk, service_pk):
+    team = Team.objects.get(id=team_pk)
+    _check_team_admin(team, request.user)
+
+    instance = team.service_configs.get(id=service_pk)
+    config_form_class = get_alert_service_backend_class(instance.kind).get_form_class()
+
+    if request.method == 'POST':
+        form = MessagingServiceConfigEditForm(request.POST, instance=instance)
+        config_form = config_form_class(data=request.POST)
+
+        if form.is_valid() and config_form.is_valid():
+            service = form.save(commit=False)
+            service.config = json.dumps(config_form.get_config())
+            service.save()
+
+            messages.success(request, "Messaging service updated successfully.")
+            return redirect('team_alerts_setup', team_pk=team_pk)
+
+    else:
+        form = MessagingServiceConfigEditForm(instance=instance)
+        config_form = config_form_class(config=json.loads(instance.config))
+
+    return render(request, 'teams/team_messaging_service_edit.html', {
+        'team': team,
+        'service_config': instance,
+        'form': form,
+        'config_form': config_form,
+    })
 
 
 DEBUG_CONTEXTS = {

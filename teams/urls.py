@@ -2,7 +2,8 @@ from django.urls import path
 
 from .views import (
     team_list, team_members, team_members_invite, team_members_accept_new_user, team_members_accept,
-    team_member_settings, team_new, team_edit)
+    team_member_settings, team_new, team_edit, team_alerts_setup, team_messaging_service_add,
+    team_messaging_service_edit)
 
 urlpatterns = [
     path('', team_list, name="team_list"),
@@ -16,4 +17,8 @@ urlpatterns = [
     path(
         '<str:team_pk>/members/accept/<str:token>/', team_members_accept_new_user, name="team_members_accept_new_user"),
     path('<str:team_pk>/members/settings/<str:user_pk>/', team_member_settings, name="team_member_settings"),
+    path('<str:team_pk>/alerts/', team_alerts_setup, name="team_alerts_setup"),
+    path('<str:team_pk>/alerts/service/add/', team_messaging_service_add, name="team_messaging_service_add"),
+    path('<str:team_pk>/alerts/service/<int:service_pk>/edit/', team_messaging_service_edit,
+         name="team_messaging_service_edit"),
 ]

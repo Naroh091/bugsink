@@ -5,9 +5,9 @@ from .models import MessagingServiceConfig
 
 class MessagingServiceConfigNewForm(ModelForm):
 
-    def __init__(self, project, *args, **kwargs):
+    def __init__(self, team, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.project = project
+        self.team = team
 
     class Meta:
         model = MessagingServiceConfig
@@ -15,7 +15,7 @@ class MessagingServiceConfigNewForm(ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.project = self.project
+        instance.team = self.team
         if commit:
             instance.save()
         return instance

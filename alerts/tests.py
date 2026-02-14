@@ -143,13 +143,15 @@ class TestAlertSending(DjangoTestCase):
 
 class TestSlackBackendErrorHandling(DjangoTestCase):
     def setUp(self):
-        self.project = Project.objects.create(name="Test project")
+        self.team = Team.objects.create(name="Test team")
+        self.project = Project.objects.create(name="Test project", team=self.team)
         self.config = MessagingServiceConfig.objects.create(
-            project=self.project,
+            team=self.team,
             display_name="Test Slack",
             kind="slack",
             config=json.dumps({"webhook_url": "https://hooks.slack.com/test"}),
         )
+        self.config.projects.add(self.project)
 
     @patch('alerts.service_backends.slack.requests.post')
     def test_slack_test_message_success_clears_failure_status(self, mock_post):
@@ -307,13 +309,15 @@ class TestSlackBackendErrorHandling(DjangoTestCase):
 
 class TestDiscordBackendErrorHandling(DjangoTestCase):
     def setUp(self):
-        self.project = Project.objects.create(name="Test project")
+        self.team = Team.objects.create(name="Test team")
+        self.project = Project.objects.create(name="Test project", team=self.team)
         self.config = MessagingServiceConfig.objects.create(
-            project=self.project,
+            team=self.team,
             display_name="Test Discord",
             kind="discord",
             config=json.dumps({"webhook_url": "https://discord.com/api/webhooks/test"}),
         )
+        self.config.projects.add(self.project)
 
     @patch('alerts.service_backends.discord.requests.post')
     def test_discord_test_message_success_clears_failure_status(self, mock_post):
