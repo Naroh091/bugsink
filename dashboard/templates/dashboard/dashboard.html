@@ -73,18 +73,18 @@
     </div>
 
     <!-- Action buttons (hidden until selection) -->
-    <div id="js-action-bar" class="ml-auto flex items-center gap-1 opacity-0 pointer-events-none transition-opacity duration-200 text-xs">
+    <div id="js-action-bar" class="ml-auto flex items-center gap-1 opacity-0 pointer-events-none transition-opacity duration-200 text-sm">
                 {% spaceless %}
                 <div class="inline-flex">
                 {% if disable_resolve_buttons %}
-                    <button disabled class="font-semibold text-slate-300 dark:text-slate-600 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
-                    <button disabled class="font-semibold text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-t border-b rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                    <button disabled class="font-normal text-slate-300 dark:text-slate-600 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
+                    <button disabled class="font-normal text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-t border-b rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
                 {% else %}
-                    <button class="font-semibold text-slate-800 dark:text-slate-100 border border-slate-500 dark:border-slate-400 px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
+                    <button class="font-normal text-slate-800 dark:text-slate-100 border border-slate-500 dark:border-slate-400 px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-s-md" name="action" value="resolved_next">{% translate "Resolved in next release" %}</button>
                     <div class="dropdown">
-                        <button disabled class="font-semibold text-slate-800 dark:text-slate-100 fill-slate-800 dark:fill-slate-100 border-slate-500 dark:border-slate-400 px-2 py-1.5 border-r border-t border-b hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                        <button disabled class="font-normal text-slate-800 dark:text-slate-100 fill-slate-800 dark:fill-slate-100 border-slate-500 dark:border-slate-400 px-2 py-1.5 border-r border-t border-b hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 rounded-e-md"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
                         <div class="dropdown-content-right flex-col">
-                            <button name="action" value="resolve" class="block self-stretch font-semibold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap text-xs">{% translate "Resolved" %}</button>
+                            <button name="action" value="resolve" class="block self-stretch font-normal text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">{% translate "Resolved" %}</button>
                         </div>
                     </div>
                 {% endif %}
@@ -94,36 +94,36 @@
                 {% spaceless %}
                 <div class="inline-flex">
                 {% if not disable_mute_buttons %}
-                <button name="action" value="mute" class="font-semibold text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-s-md">{% translate "Mute" %}</button>
+                <button name="action" value="mute" class="font-normal text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-s-md">{% translate "Mute" %}</button>
                 {% else %}
-                <button disabled name="action" value="mute" class="font-semibold text-slate-300 dark:text-slate-600 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 rounded-s-md">{% translate "Mute" %}</button>
+                <button disabled name="action" value="mute" class="font-normal text-slate-300 dark:text-slate-600 border border-slate-300 dark:border-slate-600 px-3.5 py-1.5 rounded-s-md">{% translate "Mute" %}</button>
                 {% endif %}
 
                 <div class="dropdown">
                     {% if not disable_mute_buttons %}
-                        <button disabled class="font-semibold text-slate-500 dark:text-slate-300 fill-slate-500 dark:fill-slate-500 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                        <button disabled class="font-normal text-slate-500 dark:text-slate-300 fill-slate-500 dark:fill-slate-500 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
 
                         <div class="dropdown-content-right flex-col">
                             {% for mute_option in mute_options %}
-                                <button name="action" value="mute_{{ mute_option.for_or_until }}:{{ mute_option.period_name }},{{ mute_option.nr_of_periods }},{{ mute_option.gte_threshold }}" class="block self-stretch font-semibold text-slate-500 dark:text-slate-300 border-slate-300 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap text-xs">{% if mute_option.for_or_until == "for" %}{{ mute_option.nr_of_periods }} {{ mute_option.period_name }}{% if mute_option.nr_of_periods != 1 %}s{% endif %}{% else %}{{ mute_option.gte_threshold }} events per {% if mute_option.nr_of_periods != 1%} {{ mute_option.nr_of_periods }} {{ mute_option.period_name }}s{% else %} {{ mute_option.period_name }}{% endif %}{% endif %}</button>
+                                <button name="action" value="mute_{{ mute_option.for_or_until }}:{{ mute_option.period_name }},{{ mute_option.nr_of_periods }},{{ mute_option.gte_threshold }}" class="block self-stretch font-normal text-slate-500 dark:text-slate-300 border-slate-300 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 active:ring-3 text-left whitespace-nowrap">{% if mute_option.for_or_until == "for" %}{{ mute_option.nr_of_periods }} {{ mute_option.period_name }}{% if mute_option.nr_of_periods != 1 %}s{% endif %}{% else %}{{ mute_option.gte_threshold }} events per {% if mute_option.nr_of_periods != 1%} {{ mute_option.nr_of_periods }} {{ mute_option.period_name }}s{% else %} {{ mute_option.period_name }}{% endif %}{% endif %}</button>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <button disabled class="font-semibold text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-b border-t"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
+                        <button disabled class="font-normal text-slate-300 dark:text-slate-600 fill-slate-300 dark:fill-slate-600 border-slate-300 dark:border-slate-600 px-2 py-1.5 border-r border-b border-t"><svg xmlns="http://www.w3.org/2000/svg" fill="full" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path d="M6.5,8.5l6,7l6-7H6.5z"/></svg></button>
                     {% endif %}
                 </div>
 
                 {% if not disable_unmute_buttons %}
-                    <button class="font-semibold text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
+                    <button class="font-normal text-slate-500 dark:text-slate-300 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t hover:bg-slate-200 dark:hover:bg-slate-700 active:ring-3 rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
                 {% else %}
-                    <button disabled class="font-semibold text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
+                    <button disabled class="font-normal text-slate-300 dark:text-slate-600 border-slate-300 dark:border-slate-600 px-3.5 py-1.5 border-r border-b border-t rounded-e-md" name="action" value="unmute">{% translate "Unmute" %}</button>
                 {% endif %}
                 </div>
 
                 <div class="dropdown">
-                    <button disabled class="font-semibold text-slate-500 fill-slate-500 border border-slate-300 px-2.5 py-1.5 hover:bg-slate-200 active:ring-3 rounded-md">...</button>
+                    <button disabled class="font-normal text-slate-500 fill-slate-500 border border-slate-300 px-2.5 py-1.5 hover:bg-slate-200 active:ring-3 rounded-md">...</button>
                     <div class="dropdown-content-right flex-col">
-                        <button type="button" onclick="showDeleteConfirmation()" class="block self-stretch font-semibold text-red-500 dark:text-slate-300 border-slate-300 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-800 active:ring-3 text-left whitespace-nowrap text-xs">{% translate "Delete" %}</button>
+                        <button type="button" onclick="showDeleteConfirmation()" class="block self-stretch font-normal text-red-500 dark:text-slate-300 border-slate-300 px-3 py-1.5 border-l border-r border-b bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-800 active:ring-3 text-left whitespace-nowrap">{% translate "Delete" %}</button>
                     </div>
                 </div>
                 {% endspaceless %}
@@ -156,7 +156,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <div>
-                        <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/last/" class="text-cyan-700 dark:text-cyan-300 font-semibold text-base hover:underline {% if issue.is_resolved %}italic{% endif %}">{% if issue.is_resolved %}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 inline"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd" /></svg>{% endif %}{% if issue.is_muted %}<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg> {% endif %}{{ issue.title|truncatechars:100 }}</a>
+                        <a href="{{ script_prefix }}/issues/issue/{{ issue.id }}/event/last/" class="text-cyan-700 dark:text-cyan-300 font-normal text-base hover:underline {% if issue.is_resolved %}italic{% endif %}">{% if issue.is_resolved %}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 inline"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd" /></svg>{% endif %}{% if issue.is_muted %}<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 inline"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" /></svg> {% endif %}{{ issue.title|truncatechars:100 }}</a>
                     </div>
                     <div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
                         {% if issue.last_frame_filename or issue.last_frame_function %}<span>{{ issue.last_frame_filename }}{% if issue.last_frame_function %} in <b>{{ issue.last_frame_function }}</b>{% endif %}</span>{% endif %}
