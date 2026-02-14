@@ -28,7 +28,7 @@ def _generate_labels(n):
 
 def _render_sparkline(values):
     if not values:
-        return mark_safe('')
+        return mark_safe('')  # nosec B308 B703 — static empty string
 
     n = len(values)
     width = n * 5
@@ -47,7 +47,7 @@ def _render_sparkline(values):
                 f'fill="transparent"><title>{label}: 0 events</title></rect>'
             )
         parts.append('</svg>')
-        return mark_safe(''.join(parts))
+        return mark_safe(''.join(parts))  # nosec B308 B703 — values are numeric, labels from strftime
 
     # Build points
     points = []
@@ -65,7 +65,7 @@ def _render_sparkline(values):
     line_points = ' '.join(f'{x},{y}' for x, y in points)
     area_points = f'0,{height} ' + line_points + f' {points[-1][0]},{height}'
 
-    parts = [f'<div class="relative pt-3">']
+    parts = ['<div class="relative pt-3">']
 
     # SVG chart
     parts.append(f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="none" class="w-full h-8">')
@@ -92,7 +92,7 @@ def _render_sparkline(values):
     )
 
     parts.append('</div>')
-    return mark_safe(''.join(parts))
+    return mark_safe(''.join(parts))  # nosec B308 B703 — values are numeric, labels from strftime
 
 
 @register.simple_tag
