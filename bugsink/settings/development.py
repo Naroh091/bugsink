@@ -23,9 +23,11 @@ DEBUG = True
 if os.getenv("DB", "sqlite") == "mysql":
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bugsink',
+        'NAME': os.environ.get("DB_NAME", "bugsink"),
         'USER': os.environ["DB_USER"],
         'PASSWORD': os.environ["DB_PASSWORD"],
+        'HOST': os.environ.get("DB_HOST", "127.0.0.1"),
+        'PORT': os.environ.get("DB_PORT", "3306"),
     }
 
 elif os.getenv("DB", "sqlite") == "postgres":

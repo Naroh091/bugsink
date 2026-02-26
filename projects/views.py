@@ -16,8 +16,11 @@ from django.utils.translation import gettext_lazy as _
 from users.models import EmailVerification
 from teams.models import TeamMembership, Team, TeamRole
 
+from django.db.utils import OperationalError
+
 from bugsink.app_settings import get_settings, CB_ANYBODY, CB_MEMBERS, CB_ADMINS
 from bugsink.decorators import login_exempt, atomic_for_request_method
+from bugsink.timed_sqlite_backend.base import different_runtime_limit
 from bugsink.utils import assert_
 
 from alerts.models import MessagingServiceConfig, get_alert_service_backend_class, get_alert_service_kind_choices
@@ -95,15 +98,41 @@ def project_list(request, ownership_filter=None):
         raise ValueError(f"Invalid ownership_filter: {ownership_filter}")
 
     now = timezone.now()
-    project_list = base_qs.annotate(
-        member_count=models.Count(
-            'projectmembership', distinct=True, filter=models.Q(projectmembership__accepted=True)),
-        issue_count=models.Count('issue', distinct=True),
-        issue_count_24h=models.Count(
-            'issue', distinct=True, filter=models.Q(issue__first_seen__gte=now - timedelta(hours=24))),
-        event_count_24h=models.Count(
-            'event', distinct=True, filter=models.Q(event__ingested_at__gte=now - timedelta(hours=24))),
-    ).select_related('team')
+    project_list = list(base_qs.select_related('team'))
+    project_ids = [p.id for p in project_list]
+
+    from issues.models import Issue
+    from events.models import Event
+
+    member_counts = dict(
+        ProjectMembership.objects.filter(project_id__in=project_ids, accepted=True)
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+    issue_counts = dict(
+        Issue.objects.filter(project_id__in=project_ids)
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+    issue_counts_24h = dict(
+        Issue.objects.filter(project_id__in=project_ids, first_seen__gte=now - timedelta(hours=24))
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+
+    with different_runtime_limit(0.5):
+        try:
+            event_counts_24h = dict(
+                Event.objects.filter(project_id__in=project_ids, digested_at__gte=now - timedelta(hours=24))
+                .values_list('project_id').annotate(c=models.Count('id'))
+            )
+        except OperationalError as e:
+            if e.args[0] != "interrupted":
+                raise
+            event_counts_24h = {}
+
+    for project in project_list:
+        project.member_count = member_counts.get(project.id, 0)
+        project.issue_count = issue_counts.get(project.id, 0)
+        project.issue_count_24h = issue_counts_24h.get(project.id, 0)
+        project.event_count_24h = event_counts_24h.get(project.id, 0)
 
     if ownership_filter == "mine":
         # Perhaps there's some Django-native way of doing this, but I can't figure it out soon enough, and this also
@@ -117,7 +146,6 @@ def project_list(request, ownership_filter=None):
         project_list = project_list_2
 
     from events.sparkline import get_project_sparkline_data
-    project_ids = [p.id for p in project_list]
     sparkline_data = get_project_sparkline_data(project_ids)
     for project in project_list:
         project.sparkline_data = sparkline_data.get(project.id, [0] * 38)
