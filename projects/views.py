@@ -464,7 +464,9 @@ def project_sdk_setup(request, project_pk, platform=""):
     project = Project.objects.get(id=project_pk, is_deleted=False)
 
     if not request.user.is_superuser and not ProjectMembership.objects.filter(project=project, user=request.user,
-                                                                              accepted=True).exists():
+                                                                              accepted=True).exists() \
+            and not (project.team_id and TeamMembership.objects.filter(
+                team_id=project.team_id, user=request.user, accepted=True).exists()):
         raise PermissionDenied("You are not a member of this project")
 
     # NOTE about lexers:: I have bugsink/pyments_extensions; but the platforms mentioned there don't necessarily map to

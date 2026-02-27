@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from projects.models import Project
 from issues.models import Issue
 from events.models import Event
+from teams.models import TeamMembership
 
 from .transaction import durable_atomic, immediate_atomic
 
@@ -27,6 +28,9 @@ def project_membership_required(function):
             return function(request, *args, **kwargs)
         if project.users.filter(pk=request.user.pk).exists():
             return function(request, *args, **kwargs)
+        if project.team_id and TeamMembership.objects.filter(
+                team_id=project.team_id, user=request.user, accepted=True).exists():
+            return function(request, *args, **kwargs)
 
         raise PermissionDenied("You don't have permission to access this project")
 
@@ -45,6 +49,9 @@ def issue_membership_required(function):
             return function(request, *args, **kwargs)
         if issue.project.users.filter(pk=request.user.pk).exists():
             return function(request, *args, **kwargs)
+        if issue.project.team_id and TeamMembership.objects.filter(
+                team_id=issue.project.team_id, user=request.user, accepted=True).exists():
+            return function(request, *args, **kwargs)
 
         raise PermissionDenied("You don't have permission to access this project")
 
@@ -62,6 +69,9 @@ def event_membership_required(function):
         if request.user.is_superuser:
             return function(request, *args, **kwargs)
         if event.project.users.filter(pk=request.user.pk).exists():
+            return function(request, *args, **kwargs)
+        if event.project.team_id and TeamMembership.objects.filter(
+                team_id=event.project.team_id, user=request.user, accepted=True).exists():
             return function(request, *args, **kwargs)
 
         raise PermissionDenied("You don't have permission to access this project")
