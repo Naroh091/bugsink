@@ -32,6 +32,7 @@ from .tasks import send_project_invite_email, send_project_invite_email_new_user
 
 
 User = get_user_model()
+OPEN_ISSUE_COUNT_SHOW_THRESHOLD = 25_000
 
 
 @atomic_for_request_method
@@ -133,6 +134,24 @@ def project_list(request, ownership_filter=None):
         project.issue_count = issue_counts.get(project.id, 0)
         project.issue_count_24h = issue_counts_24h.get(project.id, 0)
         project.event_count_24h = event_counts_24h.get(project.id, 0)
+        project.open_issue_count = None
+
+    projects_for_open_counts = [p for p in project_list if p.issue_count <= OPEN_ISSUE_COUNT_SHOW_THRESHOLD]
+    if projects_for_open_counts:
+        open_counts_by_project_id = dict(
+            Issue.objects.filter(
+                project_id__in=[p.id for p in projects_for_open_counts],
+                is_deleted=False,
+                is_resolved=False,
+                is_muted=False,
+            )
+            .values("project_id")
+            .annotate(open_issue_count=models.Count("id"))
+            .values_list("project_id", "open_issue_count")
+        )
+
+        for project in projects_for_open_counts:
+            project.open_issue_count = open_counts_by_project_id.get(project.id, 0)
 
     if ownership_filter == "mine":
         # Perhaps there's some Django-native way of doing this, but I can't figure it out soon enough, and this also

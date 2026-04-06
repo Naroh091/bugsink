@@ -112,6 +112,9 @@
                             <div class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">{% translate "Issues" %}</div>
                             <div class="flex items-baseline gap-1.5 mt-0.5">
                                 <span class="text-lg font-bold text-slate-700 dark:text-slate-200">{{ project.issue_count }}</span>
+                                {% if project.open_issue_count != None %}
+                                <span class="text-xs text-slate-400 dark:text-slate-500">({{ project.open_issue_count }} {% translate "open" %})</span>
+                                {% endif %}
                                 <span class="text-xs text-slate-400 dark:text-slate-500">+{{ project.issue_count_24h }} {% translate "24h" %}</span>
                             </div>
                         </div>

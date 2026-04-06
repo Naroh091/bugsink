@@ -324,6 +324,12 @@ class BaseIngestAPIView(View):
             # (covers both "deletion in progress (is_deleted=True)" and "fully deleted").
             return
 
+        if project.get_retention_max_event_count() == 0:
+            if project.stored_event_count > 0:
+                from events.tasks import delete_by_age_until_under_retention_max
+                delay_on_commit(delete_by_age_until_under_retention_max, project.id)
+            return
+
         installation = Installation.objects.get()
         if (not cls.count_installation_periods_and_act_on_it(installation, digested_at)
                 or not cls.count_project_periods_and_act_on_it(project, digested_at)):
@@ -409,7 +415,11 @@ class BaseIngestAPIView(View):
         # +1 because we're about to add one event
         issue.stored_event_count = issue.stored_event_count + 1 - evicted.per_issue.get(issue.id, 0)
         project.stored_event_count = project_stored_event_count - evicted.total
-        project.save(update_fields=["stored_event_count"])
+        if issue_created:
+            project.issue_count += 1
+            project.save(update_fields=["stored_event_count", "issue_count"])
+        else:
+            project.save(update_fields=["stored_event_count"])
 
         event, event_created = Event.from_ingested(
             event_metadata,

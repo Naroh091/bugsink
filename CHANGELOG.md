@@ -1,5 +1,61 @@
 # Changes
 
+## 2.1.0 (4 April 2026)
+
+* Show open issue counts on project list (skipping very large projects), see #228
+
+* Add outbound webhook destination policy: destinations can be filtered by hostname/IP/CIDR allow/deny lists and
+  non-global IPs are blocked by default. See #339 and [the docs](https://www.bugsink.com/docs/webhook-outbound-policy/).
+
+* Add object storage for uploaded files via `OBJECT_STORAGES`, including `migrate_to_current_objectstorage` and
+  `cleanup_objectstorage`, see #354.
+
+* File uploads and artifact bundle assembly now enforce server-side limits more strictly: chunk uploads are checked
+  server-side, `MAX_FILE_SIZE` applies to assembled files too, and artifact bundles no longer need to be loaded fully
+  into memory during extraction, see #356.
+
+* Add a synchronous `vacuum` command as a single entry point for cleanup tasks, and add `MAX_EVENT_AGE_DAYS` /
+  `delete_old_events` for age-based event cleanup, see #350 and #48.
+
+* Docker config: add `USE_X_FORWARDED_HOST` and `USE_X_FORWARDED_FOR`, see #336 and d3e743d.
+
+* Sourcemaps: handle unmappable frames per-frame, so mixed mapped/unmapped stacktraces keep rendering, see #330.
+
+* Reject events at ingest when retention is configured as zero, see #341.
+
+## 2.0.14 (3 March 2026)
+
+* sourcemaps upload now works for sentry-cli >= 3.0.0, See #290
+* Add `chunk_max_days` and `file_max_days parameters` to `vacuum_files` command and task
+
+* Update whitenoise requirement from ==6.11.* to ==6.12.*
+* Fix `FEATURE_MINIDUMPS` env-parsing in docker template
+* mobile menu: somewhat workable, See #120
+* Add index on `(digested_at, digest_order)` Fix #322
+* Move `mark_safe` closer to actual escaping
+
+## 2.0.13 (21 February 20206)
+
+### Security
+
+Fix: escape output for pygments fallback.
+
+An unauthenticated attacker could store arbitrary JavaScript in a bugsink
+project by sending a crafted Sentry event. Any admin who views the stacktrace
+will execute the payload.
+
+### Other
+
+* annotate with meta: when meta-keys are not actually in the var
+* Reduce Slack title length from 200 to 150 characters (See #318)
+* fix dbrouter `allow_migrate` for more than 2 databases
+* Distinguish installation-quota warning message from the project-level ones
+* fix unsupported operand type(s) for +: 'NoneType' and 'str' in request.url display
+* Add a `description` field to authtoken (See #312)
+* 400 template should say 'bad request' not 'server error'
+* Max retention: default per-project of 20% per project to avoid out-of-room on project 2
+* Allow editing of project when global `max_rention` settings have recently been decreased
+
 ## 2.0.12 (26 January 2026)
 
 ### Fixes:

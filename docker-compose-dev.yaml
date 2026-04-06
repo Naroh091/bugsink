@@ -1,15 +1,18 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: mysql:8
     restart: unless-stopped
     environment:
-      POSTGRES_USER: bugsinkuser 
-      POSTGRES_PASSWORD: your_super_secret_password  # Change this
-      POSTGRES_DB: bugsink
+      MYSQL_USER: db
+      MYSQL_PASSWORD: root  # Change this
+      MYSQL_DATABASE: db
+      MYSQL_ROOT_PASSWORD: root  # Change this
+    ports:
+      - "3306:3306"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - /home/coder/db-data:/var/lib/mysql
     healthcheck:
-      test: pg_isready -h db      
+      test: mysqladmin ping -h db
       retries: 5
       start_period: 10s
       interval: 5s
@@ -27,14 +30,8 @@ services:
       SECRET_KEY: django-insecure-RMLYThim9NybWgXiUGat32Aa0Qbgqscf4NPDQuZO2glcZPOiXn  # Change this (and remove django-insecure prefix), e.g. openssl rand -base64 50
       CREATE_SUPERUSER: email:password  # Change this (or remove it and execute 'createsuperuser' against the running container)
       PORT: 8000
-      DATABASE_URL: postgresql://bugsinkuser:your_super_secret_password@db:5432/bugsink # Change password to match POSTGRES_PASSWORD above
+      DATABASE_URL: mysql://bugsinkuser:your_super_secret_password@db:3306/bugsink # Change password to match MYSQL_PASSWORD above
       BEHIND_HTTPS_PROXY: "false"  # Change this for setups behind a proxy w/ ssl enabled
-      USE_X_FORWARDED_HOST: "false"  # Set to true if your proxy passes the original host via X-Forwarded-Host
-      # Prefer X-Real-IP when your proxy supports it. To use X-Forwarded-For instead, set USE_X_REAL_IP to false and
-      # uncomment both settings below.
-      # USE_X_REAL_IP: "false"
-      # USE_X_FORWARDED_FOR: "true"
-      # X_FORWARDED_FOR_PROXY_COUNT: "1"
       BASE_URL: "http://localhost:8000"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/\").raise_for_status()'"]
@@ -42,5 +39,3 @@ services:
       timeout: 20s
       retries: 10
 
-volumes:
-  db-data:
