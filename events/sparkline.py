@@ -61,7 +61,11 @@ def _get_sparkline_data(filter_field, entity_ids):
     # Query 1: daily buckets
     daily_rows = (
         Event.objects
-        .filter(**{f'{filter_field}__in': entity_ids, 'digested_at__gte': daily_start, 'digested_at__lt': hourly_cutoff})
+        .filter(**{
+            f'{filter_field}__in': entity_ids,
+            'digested_at__gte': daily_start,
+            'digested_at__lt': hourly_cutoff,
+        })
         .annotate(bucket=_trunc_date('digested_at'))
         .values(filter_field, 'bucket')
         .annotate(count=Count('id'))

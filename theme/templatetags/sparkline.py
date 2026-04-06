@@ -70,7 +70,9 @@ def _render_sparkline(values):
     # SVG chart
     parts.append(f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="none" class="w-full h-8">')
     parts.append(f'<polygon points="{area_points}" fill="currentColor" opacity="0.25"/>')
-    parts.append(f'<polyline points="{line_points}" fill="none" stroke="currentColor" opacity="0.6" stroke-width="1.5"/>')
+    parts.append(
+        f'<polyline points="{line_points}" fill="none" stroke="currentColor" opacity="0.6" stroke-width="1.5"/>'
+    )
     parts.append(f'<circle cx="{peak_x}" cy="{peak_y}" r="2" fill="currentColor" opacity="0.8"/>')
 
     # Hover zones with tooltips
