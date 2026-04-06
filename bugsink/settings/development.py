@@ -178,9 +178,10 @@ ALLOWED_HOSTS = deduce_allowed_hosts(BUGSINK["BASE_URL"]) + [
     "8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
-]
+if not I_AM_RUNNING == "TEST":
+    CSRF_TRUSTED_ORIGINS = [
+        "https://8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
+    ]
 
 # django-tailwind setting; the below allows for environment-variable overriding of the npm binary path.
 NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", "npm")
