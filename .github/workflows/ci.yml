@@ -240,7 +240,7 @@ jobs:
   docker-build-push:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [flake8, bandit, test, docker]
+    needs: [ruff, bandit, test, docker]
     permissions:
       contents: write
       packages: write
