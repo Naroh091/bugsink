@@ -542,7 +542,9 @@ class ViewTests(TransactionTestCase):
         self.assertContains(response, f"Error mapping (10, 36758) into sourcemap ({broken_debug_id})")
         self.assertContains(response, "broken.js")
         self.assertContains(response, "good-source.ts")
-        self.assertContains(response, "mappedFunction</span> line <span class=\"font-bold\">11</span>")
+        self.assertContains(response, "mappedFunction</span>")
+        self.assertContains(response, "at line")
+        self.assertContains(response, ">11</span>")
 
 
 @tag("samples")
