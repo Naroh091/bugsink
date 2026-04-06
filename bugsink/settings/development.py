@@ -173,7 +173,14 @@ LOGGING["formatters"]["snappea"]["format"] = "{asctime} - {threadName} - {leveln
 # sending during development
 LOGGING['loggers']['bugsink.email']['level'] = "INFO"
 
-ALLOWED_HOSTS = deduce_allowed_hosts(BUGSINK["BASE_URL"])
+ALLOWED_HOSTS = deduce_allowed_hosts(BUGSINK["BASE_URL"]) + [
+    os.getenv("EXTRA_ALLOWED_HOST", ""),
+    "8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
+]
 
 # django-tailwind setting; the below allows for environment-variable overriding of the npm binary path.
 NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", "npm")

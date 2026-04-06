@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bugsink": {
+      "type": "http",
+      "url": "https://issuetracker.fundacionmaldita.es/mcp",
+      "headers": {
+        "Authorization": "Bearer ${BUGSINK_TOKEN}"
+      }
+    }
+  }
+}
