@@ -41,7 +41,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
  && apt-get install -y --no-install-recommends binutils \
  && pip install --find-links /wheels --no-index mysqlclient \
  && pip install "psycopg[binary]" \
- && pip install -r /tmp/requirements.txt \
+ && pip install --index-url https://pypi.org/simple/ -r /tmp/requirements.txt \
  && find /usr/local/lib/python3.12/site-packages -name '*.so' -exec strip --strip-unneeded {} + \
  && apt-get purge -y binutils && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/*
