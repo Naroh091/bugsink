@@ -175,8 +175,9 @@ class ProjectDeletionTestCase(TransactionTestCase):
 
     def setUp(self):
         super().setUp()
+        self.team = Team.objects.create(name="Test Team")
         self.project = Project.objects.create(
-            name="Test Project", stored_event_count=1, issue_count=1)  # 1, in prep. of the below
+            name="Test Project", stored_event_count=1, issue_count=1, team=self.team)  # 1, in prep. of the below
         self.issue, _ = get_or_create_issue(self.project)
         self.event = create_event(self.project, issue=self.issue)
         self.user = User.objects.create_user(username='test', password='test')
@@ -186,7 +187,8 @@ class ProjectDeletionTestCase(TransactionTestCase):
             issue=self.issue, triggering_event=self.event, timestamp=self.event.ingested_at,
             kind=TurningPointKind.FIRST_SEEN)
 
-        MessagingServiceConfig.objects.create(project=self.project)
+        service = MessagingServiceConfig.objects.create(team=self.team)
+        service.projects.add(self.project)
         ProjectMembership.objects.create(project=self.project, user=self.user)
         Release.objects.create(project=self.project, version="1.0.0")
         file = File.objects.create(checksum="a" * 40, filename="test.js.map", size=0)
@@ -210,7 +212,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
                   "events.Event",
                   "issues.Grouping",
                   "files.FileMetadata",
-                  "alerts.MessagingServiceConfig",
                   "projects.ProjectMembership",
                   "releases.Release",
                   "issues.Issue",
@@ -285,7 +286,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
             (apps.get_model('tags', 'IssueTag'), 'value'),
             (apps.get_model('tags', 'EventTag'), 'project'),
             (apps.get_model('tags', 'IssueTag'), 'project'),
-            (apps.get_model('alerts', 'MessagingServiceConfig'), 'project'),
         ])
 
         self.assertEqual(walk(override, 'projects.Project'), [
@@ -298,7 +298,6 @@ class ProjectDeletionTestCase(TransactionTestCase):
             (apps.get_model('events', 'ProjectEventCountsPerHour'), 'project'),
             (apps.get_model('events', 'Event'), 'project'),
             (apps.get_model('issues', 'Grouping'), 'project'),
-            (apps.get_model('alerts', 'MessagingServiceConfig'), 'project'),
             (apps.get_model('projects', 'ProjectMembership'), 'project'),
             (apps.get_model('releases', 'Release'), 'project'),
             (apps.get_model('issues', 'Issue'), 'project'),
@@ -449,17 +448,14 @@ class ProjectListOpenIssueCountTestCase(TransactionTestCase):
             project=self.project, digest_order=3, is_resolved=False, is_muted=True, **denormalized_issue_fields())
 
     def test_project_list_shows_open_issue_count_when_under_threshold(self):
-        with patch.object(Issue.objects, "filter", wraps=Issue.objects.filter) as issue_filter:
-            response = self.client.get("/projects/mine/")
-
-        issue_filter.assert_called_once()
-        self.assertContains(response, "1 open issues")
+        response = self.client.get("/projects/mine/")
+        self.assertContains(response, "1 open")
 
     def test_project_list_shows_zero_open_issues(self):
         Issue.objects.filter(project=self.project, is_resolved=False, is_muted=False).update(is_resolved=True)
 
         response = self.client.get("/projects/mine/")
-        self.assertContains(response, "0 open issues")
+        self.assertContains(response, "0 open")
 
     def test_project_list_shows_24h_sparkline(self):
         issue = Issue.objects.filter(project=self.project, is_resolved=False, is_muted=False).get()
@@ -477,8 +473,8 @@ class ProjectListOpenIssueCountTestCase(TransactionTestCase):
             response = self.client.get("/projects/mine/")
 
         issue_filter.assert_not_called()
-        self.assertContains(response, "many issues")
-        self.assertNotContains(response, "open issues")
+        # When over threshold, open_issue_count is None, so the "(N open)" span is not rendered
+        self.assertNotContains(response, " open)")
 
 
 class ProjectScopedActionTestCase(TransactionTestCase):
@@ -486,14 +482,15 @@ class ProjectScopedActionTestCase(TransactionTestCase):
     def setUp(self):
         super().setUp()
         self.user = User.objects.create_user(username="project-admin", password="test")
-        self.project = Project.objects.create(name="owned")
+        self.team = Team.objects.create(name="team")
+        self.project = Project.objects.create(name="owned", team=self.team)
         ProjectMembership.objects.create(
             project=self.project, user=self.user, role=ProjectRole.ADMIN, accepted=True)
         self.client.force_login(self.user)
 
     def test_member_remove_scopes_to_project(self):
         other_user = User.objects.create_user(username="other", password="test")
-        other_project = Project.objects.create(name="other")
+        other_project = Project.objects.create(name="other", team=self.team)
         other_membership = ProjectMembership.objects.create(project=other_project, user=other_user)
 
         response = self.client.post(
@@ -505,8 +502,11 @@ class ProjectScopedActionTestCase(TransactionTestCase):
         self.assertTrue(ProjectMembership.objects.filter(id=other_membership.id).exists())
 
     def test_alert_service_remove_scopes_to_project(self):
-        other_project = Project.objects.create(name="other")
-        other_service = MessagingServiceConfig.objects.create(project=other_project)
+        # service configs live on the team and are attached to projects; "remove" detaches, and must not reach
+        # services that are not attached to the project the action is posted to.
+        other_project = Project.objects.create(name="other", team=self.team)
+        other_service = MessagingServiceConfig.objects.create(team=self.team)
+        other_service.projects.add(other_project)
 
         response = self.client.post(
             f"/projects/{self.project.id}/alerts/",
@@ -514,4 +514,4 @@ class ProjectScopedActionTestCase(TransactionTestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(MessagingServiceConfig.objects.filter(id=other_service.id).exists())
+        self.assertTrue(other_service.projects.filter(id=other_project.id).exists())

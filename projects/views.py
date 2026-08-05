@@ -15,13 +15,16 @@ from django.utils.translation import gettext_lazy as _
 from users.models import EmailVerification
 from teams.models import TeamMembership, Team, TeamRole
 
+from django.db.utils import OperationalError
+
 from bugsink.app_settings import get_settings, CB_ANYBODY, CB_MEMBERS, CB_ADMINS
 from bugsink.decorators import login_exempt, atomic_for_request_method
 from bugsink.invite_links import email_not_sent_invite_link_notice, manual_invite_link_notice
+from bugsink.timed_sqlite_backend.base import different_runtime_limit
 from bugsink.utils import assert_, email_backend_delivers_mail
 
 from alerts.models import MessagingServiceConfig, get_alert_service_backend_class, get_alert_service_kind_choices
-from alerts.forms import MessagingServiceConfigNewForm, MessagingServiceConfigEditForm
+from alerts.forms import MessagingServiceConfigNewForm
 from events.sparklines import get_project_list_event_sparklines
 from phonehome.utils import phone_home
 
@@ -100,17 +103,46 @@ def project_list(request, ownership_filter=None):
     else:
         raise ValueError(f"Invalid ownership_filter: {ownership_filter}")
 
-    project_list = list(base_qs.annotate(
-        member_count=models.Count(
-            'projectmembership', distinct=True, filter=models.Q(projectmembership__accepted=True)),
-    ).select_related('team'))
+    now = timezone.now()
+    project_list = list(base_qs.select_related('team'))
+    project_ids = [p.id for p in project_list]
+
+    from issues.models import Issue
+    from events.models import Event
+
+    member_counts = dict(
+        ProjectMembership.objects.filter(project_id__in=project_ids, accepted=True)
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+    issue_counts = dict(
+        Issue.objects.filter(project_id__in=project_ids)
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+    issue_counts_24h = dict(
+        Issue.objects.filter(project_id__in=project_ids, first_seen__gte=now - timedelta(hours=24))
+        .values_list('project_id').annotate(c=models.Count('id'))
+    )
+
+    with different_runtime_limit(0.5):
+        try:
+            event_counts_24h = dict(
+                Event.objects.filter(project_id__in=project_ids, digested_at__gte=now - timedelta(hours=24))
+                .values_list('project_id').annotate(c=models.Count('id'))
+            )
+        except OperationalError as e:
+            if e.args[0] != "interrupted":
+                raise
+            event_counts_24h = {}
 
     for project in project_list:
+        project.member_count = member_counts.get(project.id, 0)
+        project.issue_count = issue_counts.get(project.id, 0)
+        project.issue_count_24h = issue_counts_24h.get(project.id, 0)
+        project.event_count_24h = event_counts_24h.get(project.id, 0)
         project.open_issue_count = None
 
     projects_for_open_counts = [p for p in project_list if p.issue_count <= OPEN_ISSUE_COUNT_SHOW_THRESHOLD]
     if projects_for_open_counts:
-        from issues.models import Issue
         open_counts_by_project_id = dict(
             Issue.objects.filter(
                 project_id__in=[p.id for p in projects_for_open_counts],
@@ -141,6 +173,11 @@ def project_list(request, ownership_filter=None):
             project_list_2.append(project)
         project_list = project_list_2
 
+    from events.sparkline import get_project_sparkline_data
+    sparkline_data = get_project_sparkline_data(project_ids)
+    for project in project_list:
+        project.sparkline_data = sparkline_data.get(project.id, [0] * 38)
+
     return render(request, 'projects/project_list.html', {
         'can_create':
             request.user.is_superuser or TeamMembership.objects.filter(user=request.user, role=TeamRole.ADMIN).exists(),
@@ -165,6 +202,11 @@ def project_new(request):
         my_admin_memberships = TeamMembership.objects.filter(user=request.user, role=TeamRole.ADMIN, accepted=True)
         team_qs = Team.objects.filter(teammembership__in=my_admin_memberships).distinct()
 
+    team_services = {
+        str(team.id): list(team.service_configs.all())
+        for team in team_qs.prefetch_related('service_configs')
+    }
+
     if request.method == 'POST':
         form = ProjectForm(request.POST, team_qs=team_qs)
 
@@ -173,6 +215,14 @@ def project_new(request):
 
             # the user who creates the project is automatically an (accepted) admin of the project
             ProjectMembership.objects.create(project=project, user=request.user, role=ProjectRole.ADMIN, accepted=True)
+
+            # attach selected messaging services
+            selected_service_ids = request.POST.getlist('attach_services')
+            if selected_service_ids:
+                services = MessagingServiceConfig.objects.filter(
+                    id__in=selected_service_ids, team=project.team)
+                project.service_configs.add(*services)
+
             return redirect('project_sdk_setup', project_pk=project.id)
 
     else:
@@ -180,6 +230,7 @@ def project_new(request):
 
     return render(request, 'projects/project_new.html', {
         'form': form,
+        'team_services': team_services,
     })
 
 
@@ -496,7 +547,9 @@ def project_sdk_setup(request, project_pk, platform=""):
     project = Project.objects.get(id=project_pk, is_deleted=False)
 
     if not request.user.is_superuser and not ProjectMembership.objects.filter(project=project, user=request.user,
-                                                                              accepted=True).exists():
+                                                                              accepted=True).exists() \
+            and not (project.team_id and TeamMembership.objects.filter(
+                team_id=project.team_id, user=request.user, accepted=True).exists()):
         raise PermissionDenied("You are not a member of this project")
 
     # NOTE about lexers:: I have bugsink/pyments_extensions; but the platforms mentioned there don't necessarily map to
@@ -521,17 +574,26 @@ def project_alerts_setup(request, project_pk):
         full_action_str = request.POST.get('action')
         action, service_id = full_action_str.split(":", 1)
         if action == "remove":
-            MessagingServiceConfig.objects.filter(project=project_pk, id=service_id).delete()
+            service = project.service_configs.filter(id=service_id).first()
+            if service:
+                project.service_configs.remove(service)
+        elif action == "attach":
+            service = project.team.service_configs.filter(id=service_id).first()
+            if service:
+                project.service_configs.add(service)
         elif action == "test":
-            service = MessagingServiceConfig.objects.get(project=project_pk, id=service_id)
+            service = project.service_configs.get(id=service_id)
             service_backend = service.get_backend()
-            service_backend.send_test_message()
+            service_backend.send_test_message(project_name=project.name)
             messages.success(
                 request, "Test message sent; check the configured service to see if it arrived.")
+
+    available_services = project.team.service_configs.exclude(projects=project)
 
     return render(request, 'projects/project_alerts_setup.html', {
         'project': project,
         'service_configs': project.service_configs.all(),
+        'available_services': available_services,
     })
 
 
@@ -546,7 +608,7 @@ def project_messaging_service_add(request, project_pk):
     }
 
     if request.method == 'POST':
-        form = MessagingServiceConfigNewForm(project, request.POST)
+        form = MessagingServiceConfigNewForm(project.team, request.POST)
         kind = form.data.get('kind') or form.fields['kind'].initial
         config_form = get_alert_service_backend_class(kind).get_form_class()(data=request.POST)
         config_forms[kind] = config_form
@@ -556,12 +618,13 @@ def project_messaging_service_add(request, project_pk):
                 service = form.save(commit=False)
                 service.config = json.dumps(config_form.get_config())
                 service.save()
+                service.projects.add(project)
 
                 messages.success(request, "Messaging service added successfully.")
                 return redirect('project_alerts_setup', project_pk=project_pk)
 
     else:
-        form = MessagingServiceConfigNewForm(project)
+        form = MessagingServiceConfigNewForm(project.team)
         kind = form.fields['kind'].initial
 
     return render(request, 'projects/project_messaging_service_new.html', {
@@ -577,31 +640,4 @@ def project_messaging_service_edit(request, project_pk, service_pk):
     project = Project.objects.get(id=project_pk, is_deleted=False)
     _check_project_admin(project, request.user)
 
-    instance = project.service_configs.get(id=service_pk)
-    # for editing, we don't allow for changing the kind; although it's probably possible to implement it, it would raise
-    # questions on "how much are the various configs related (should data be transferred from one config to another).
-    # and even though "it's possible" simply disallowing greatly simplifies the implementation.
-    config_form_class = get_alert_service_backend_class(instance.kind).get_form_class()
-
-    if request.method == 'POST':
-        form = MessagingServiceConfigEditForm(request.POST, instance=instance)
-        config_form = config_form_class(data=request.POST)
-
-        if form.is_valid() and config_form.is_valid():
-            service = form.save(commit=False)
-            service.config = json.dumps(config_form.get_config())
-            service.save()
-
-            messages.success(request, "Messaging service updated successfully.")
-            return redirect('project_alerts_setup', project_pk=project_pk)
-
-    else:
-        form = MessagingServiceConfigEditForm(instance=instance)
-        config_form = config_form_class(config=json.loads(instance.config))
-
-    return render(request, 'projects/project_messaging_service_edit.html', {
-        'project': project,
-        'service_config': instance,
-        'form': form,
-        'config_form': config_form,
-    })
+    return redirect('team_messaging_service_edit', team_pk=project.team_id, service_pk=service_pk)

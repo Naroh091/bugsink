@@ -224,6 +224,26 @@ def _get_issue_list_sort(request):
     return sort if sort in ISSUE_LIST_SORTS else "last_seen"
 
 
+STATE_FILTER_CHOICES = [
+    ("open", "Open"),
+    ("unresolved", "Unresolved"),
+    ("muted", "Muted"),
+    ("resolved", "Resolved"),
+    ("all", "All"),
+]
+
+
+def _state_url_map(project):
+    # project=None: the global (cross-project) issue list, which has its own set of URLs
+    if project is None:
+        return {state: reverse(f"global_issue_list_{state}") for (state, _) in STATE_FILTER_CHOICES}
+
+    return {
+        state: reverse(f"issue_list_{state}", kwargs={"project_pk": project.pk})
+        for (state, _) in STATE_FILTER_CHOICES
+    }
+
+
 def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
     sort = _get_issue_list_sort(request)
     issue_list = _filter_issue_list_by_state(
@@ -241,6 +261,12 @@ def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
         [issue.id for issue in page_obj.object_list], timezone.now(), project.id)
     for issue in page_obj.object_list:
         issue.list_sparkline = issue_sparklines[issue.id]
+
+    from events.sparkline import get_issue_sparkline_data
+    page_issue_ids = [issue.id for issue in page_obj.object_list]
+    sparkline_data = get_issue_sparkline_data(page_issue_ids)
+    for issue in page_obj.object_list:
+        issue.sparkline_data = sparkline_data.get(issue.id, [0] * 38)
 
     try:
         member = ProjectMembership.objects.get(project=project, user=request.user)
@@ -263,6 +289,8 @@ def _issue_list_pt_2(request, project, state_filter, unapplied_issue_ids):
         "q": request.GET.get("q", ""),
         "sort": sort,
         "page_obj": page_obj,
+        "state_filter_choices": STATE_FILTER_CHOICES,
+        "state_url_map": _state_url_map(project),
     })
 
 
@@ -298,6 +326,8 @@ def _global_issue_list_pt_2(request, accessible_project_ids, state_filter, unapp
         "q": "",
         "sort": sort,
         "page_obj": page_obj,
+        "state_filter_choices": STATE_FILTER_CHOICES,
+        "state_url_map": _state_url_map(None),
     })
 
 

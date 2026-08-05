@@ -5,32 +5,24 @@
 
 {% block content %}
 
-
 <div class="flex items-center justify-center">
 
-    <div class="m-4 max-w-4xl flex-auto">
-        <h1 class="text-4xl font-bold">Connect your Python Application</h1>
-
-        <div class="mt-4">
+    <div class="m-4 max-w-2xl w-full">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-4">Connect your Python Application</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             Connect your Python application to Bugsink to start tracking errors.
             Bugsink is compatible with the Sentry SDK. A basic setup is the following:
-        </div>
+        </p>
 
-        <h2 class="mt-8 text-2xl font-bold">Step 1: Install the SDK</h2>
-
-        <div class="mt-4">
-            Install the SDK using pip:
-        </div>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 1: Install the SDK</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Install the SDK using pip:</p>
 
 {% code %}:::text
 pip install sentry-sdk
 {% endcode %}
 
-        <h2 class="mt-8 text-2xl font-bold">Step 2: Initialize the SDK</h2>
-
-        <div class="mt-4">
-            Initialize and configure the SDK with your DSN. Add the following at the start of your application code:
-        </div>
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 2: Initialize the SDK</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Initialize and configure the SDK with your DSN. Add the following at the start of your application code:</p>
 
 {% code %}:::python
 import sentry_sdk
@@ -52,30 +44,24 @@ sentry_sdk.init(
 )
 {% endcode %}
 
-        <h2 class="mt-6 text-2xl font-bold">Step 3: Verify the setup</h2>
-
-        <div class="mt-4">
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 3: Verify the setup</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
             To verify that everything is working, raise an exception on purpose and check that it appears in Bugsink.
-
-        </div>
-        <div class="mt-4">
-            Put this code somewhere in your application where it can easily be triggered and then trigger it (don't use an interactive shell since the SDK will ignore exceptions raised in it):
-        </div>
+            Put this code somewhere in your application where it can easily be triggered (don't use an interactive shell since the SDK will ignore exceptions raised in it):
+        </p>
 
 {% code %}:::python
 raise Exception("Raised Exception on purpose to send it to Bugsink")
 {% endcode %}
 
-        <div class="mt-4">
-            Your event should now appear in the <a href="{% url "issue_list_open" project_pk=project.pk %}" class="text-cyan-500 dark:text-cyan-300 font-bold">list of open issues</a>.
-        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+            Your event should now appear in the <a href="{% url "issue_list_open" project_pk=project.pk %}" class="text-cyan-600 dark:text-cyan-300 hover:underline">list of open issues</a>.
+        </p>
 
-        <h2 class="mt-6 text-2xl font-bold">Further reading</h2>
-
-        <div class="mt-4">
-            For more information on how to use the SDK, check the <a href="https://www.bugsink.com/docs/sdk-recommendations/" class="text-cyan-500 dark:text-cyan-300 font-bold">Bugsink-specific SDK recommendations</a>.
-        </div>
-
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Further reading</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            For more information on how to use the SDK, check the <a href="https://www.bugsink.com/docs/sdk-recommendations/" class="text-cyan-600 dark:text-cyan-300 hover:underline">Bugsink-specific SDK recommendations</a>.
+        </p>
 
     </div>
 </div>

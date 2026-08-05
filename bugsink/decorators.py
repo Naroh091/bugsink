@@ -31,6 +31,9 @@ def project_membership_required(function):
         if project.team_id and TeamMembership.objects.filter(
                 team_id=project.team_id, user=request.user, accepted=True).exists():
             return function(request, *args, **kwargs)
+        if project.team_id and TeamMembership.objects.filter(
+                team_id=project.team_id, user=request.user, accepted=True).exists():
+            return function(request, *args, **kwargs)
 
         raise PermissionDenied("You don't have permission to access this project")
 
@@ -52,6 +55,9 @@ def issue_membership_required(function):
         if issue.project.team_id and TeamMembership.objects.filter(
                 team_id=issue.project.team_id, user=request.user, accepted=True).exists():
             return function(request, *args, **kwargs)
+        if issue.project.team_id and TeamMembership.objects.filter(
+                team_id=issue.project.team_id, user=request.user, accepted=True).exists():
+            return function(request, *args, **kwargs)
 
         raise PermissionDenied("You don't have permission to access this project")
 
@@ -69,6 +75,9 @@ def event_membership_required(function):
         if request.user.is_superuser:
             return function(request, *args, **kwargs)
         if user_has_issue_access(request.user, event.project):
+            return function(request, *args, **kwargs)
+        if event.project.team_id and TeamMembership.objects.filter(
+                team_id=event.project.team_id, user=request.user, accepted=True).exists():
             return function(request, *args, **kwargs)
         if event.project.team_id and TeamMembership.objects.filter(
                 team_id=event.project.team_id, user=request.user, accepted=True).exists():

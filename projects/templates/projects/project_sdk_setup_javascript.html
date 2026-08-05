@@ -5,34 +5,30 @@
 
 {% block content %}
 
-
 <div class="flex items-center justify-center">
 
-    <div class="m-4 max-w-4xl flex-auto">
-        <h1 class="text-4xl font-bold">Set up your SDK</h1>
-
-        <div class="mt-4">
+    <div class="m-4 max-w-2xl w-full">
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-4">Set up your SDK</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
             Connect your JavaScript application to Bugsink to start tracking errors.
-            Bugsink is compatible with the <a class="text-cyan-500 dark:text-cyan-300 font-bold" href="https://docs.sentry.io/platforms/javascript/">Sentry SDK</a>.
-            Detailed instructions per framework are in the <a class="text-cyan-500 dark:text-cyan-300 font-bold" href="https://docs.sentry.io/platforms/javascript/">Sentry SDK Documentation</a>. In the below we provide an overview, zoom in on the differences between Bugsink and Sentry, and provide a snippet with the correct DSN set.
-        </div>
+            Bugsink is compatible with the <a class="text-cyan-600 dark:text-cyan-300 hover:underline" href="https://docs.sentry.io/platforms/javascript/">Sentry SDK</a>.
+            Detailed instructions per framework are in the <a class="text-cyan-600 dark:text-cyan-300 hover:underline" href="https://docs.sentry.io/platforms/javascript/">Sentry SDK Documentation</a>. Below we provide an overview, zoom in on the differences between Bugsink and Sentry, and provide a snippet with the correct DSN set.
+        </p>
 
-        <h2 class="mt-8 text-2xl font-bold">Step 1: Install the SDK</h2>
-
-        <div class="mt-4">
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 1: Install the SDK</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
             Install the SDK by including a script tag, or by using a package manager such as npm or yarn. Note that the SDK to use depends on your framework (e.g. React, Angular, Vue, etc.).
+        </p>
 
 {% code %}:::text
 npm install @sentry/your-js-flavor --save
 {% endcode %}
-        </div>
 
-        <h2 class="mt-8 text-2xl font-bold">Step 2: Initialize the SDK</h2>
-
-        <div class="mt-4">
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 2: Initialize the SDK</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
             Initialize and configure the SDK with your DSN. Use the configuration snippet that applies to your framework,
             and replace the Sentry.init call with the call below:
-        </div>
+        </p>
 
 {% code %}:::javascript
 // use the correct import statement for your framework, like:
@@ -54,30 +50,27 @@ Sentry.init({
 {% endcomment %}});
 {% endcode %}
 
-        <h2 class="mt-6 text-2xl font-bold">Step 3: Verify the setup</h2>
-
-        <div class="mt-4">
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Step 3: Verify the setup</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
             To verify that everything is working, raise an exception on purpose and check that it appears in Bugsink.
             A good location for this depends on your framework, but a good place is in the main entry point of your application.
             (Don't use the devtools console, because it will not be caught by the SDK).
-        </div>
+        </p>
 
 {% code %}:::javascript
 // Put something like this in the handler of a button click, on a timeout, or similar.
 throw new Error("Error Thrown on purpose to send it to Bugsink");
 {% endcode %}
 
-        <div class="mt-4">
-            Your event should now appear in the <a href="{% url "issue_list_open" project_pk=project.pk %}" class="text-cyan-500 dark:text-cyan-300 font-bold">list of open issues</a>.
-        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+            Your event should now appear in the <a href="{% url "issue_list_open" project_pk=project.pk %}" class="text-cyan-600 dark:text-cyan-300 hover:underline">list of open issues</a>.
+        </p>
 
-        <h2 class="mt-6 text-2xl font-bold">Further reading</h2>
-
-        <div class="mt-4">
-            You'll probably want to configure the <a href="https://www.bugsink.com/docs/sourcemaps/" class="text-cyan-500 dark:text-cyan-300 font-bold">source maps</a> next, so that you get readable stack traces.
-            For even more information on how to use the SDK, check the <a href="https://www.bugsink.com/docs/sdk-recommendations/" class="text-cyan-500 dark:text-cyan-300 font-bold">Bugsink-specific SDK recommendations</a>.
-        </div>
-
+        <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-6 mb-2">Further reading</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            You'll probably want to configure the <a href="https://www.bugsink.com/docs/sourcemaps/" class="text-cyan-600 dark:text-cyan-300 hover:underline">source maps</a> next, so that you get readable stack traces.
+            For even more information on how to use the SDK, check the <a href="https://www.bugsink.com/docs/sdk-recommendations/" class="text-cyan-600 dark:text-cyan-300 hover:underline">Bugsink-specific SDK recommendations</a>.
+        </p>
 
     </div>
 </div>
