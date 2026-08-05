@@ -25,7 +25,7 @@ from bugsink.utils import assert_, email_backend_delivers_mail
 
 from alerts.models import MessagingServiceConfig, get_alert_service_backend_class, get_alert_service_kind_choices
 from alerts.forms import MessagingServiceConfigNewForm
-from events.sparklines import get_project_list_event_sparklines
+
 from phonehome.utils import phone_home
 
 from .models import Project, ProjectMembership, ProjectRole, ProjectVisibility
@@ -157,10 +157,6 @@ def project_list(request, ownership_filter=None):
 
         for project in projects_for_open_counts:
             project.open_issue_count = open_counts_by_project_id.get(project.id, 0)
-
-    project_sparklines = get_project_list_event_sparklines([project.id for project in project_list], timezone.now())
-    for project in project_list:
-        project.list_sparkline = project_sparklines[project.id]
 
     if ownership_filter == "mine":
         # Perhaps there's some Django-native way of doing this, but I can't figure it out soon enough, and this also

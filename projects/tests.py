@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
 from unittest.mock import patch
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from bugsink.test_utils import TransactionTestCase25251 as TransactionTestCase
 from bugsink.utils import get_model_topography
@@ -458,21 +458,24 @@ class ProjectListOpenIssueCountTestCase(TransactionTestCase):
         self.assertContains(response, "0 open")
 
     def test_project_list_shows_24h_sparkline(self):
-        issue = Issue.objects.filter(project=self.project, is_resolved=False, is_muted=False).get()
-        now = datetime.now(timezone.utc)
-        record_event_counts(self.project, issue, now, issue.digest_order)
-        record_event_counts(self.project, issue, datetime.now(timezone.utc) - timedelta(days=2), issue.digest_order)
+        # the project-list sparkline is drawn from actual Event rows (events.sparkline), not from the denormalized
+        # per-hour counts; one event in the last 24h must show up as a non-empty hourly bucket.
+        issue, _ = get_or_create_issue(self.project)
+        create_event(project=self.project, issue=issue)
 
         response = self.client.get("/projects/mine/")
 
-        self.assertContains(response, "1 event in the past 24h")
+        self.assertContains(response, ": 1 event</title>")
 
     @patch("projects.views.OPEN_ISSUE_COUNT_SHOW_THRESHOLD", 2)
     def test_project_list_skips_open_issue_query_when_over_threshold(self):
         with patch.object(Issue.objects, "filter", wraps=Issue.objects.filter) as issue_filter:
             response = self.client.get("/projects/mine/")
 
-        issue_filter.assert_not_called()
+        # the card always fetches total/24h issue counts; it's the open-issue count that must be skipped over threshold
+        open_count_calls = [c for c in issue_filter.call_args_list if c.kwargs.get("is_resolved") is False]
+        self.assertEqual(open_count_calls, [])
+
         # When over threshold, open_issue_count is None, so the "(N open)" span is not rendered
         self.assertNotContains(response, " open)")
 

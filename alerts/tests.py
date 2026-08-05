@@ -508,11 +508,12 @@ class TestDiscordBackendErrorHandling(DjangoTestCase):
 
 class TestTelegramBackend(DjangoTestCase):
     def setUp(self):
-        self.project = Project.objects.create(name="Test project")
+        self.team = Team.objects.create(name="Test team")
+        self.project = Project.objects.create(name="Test project", team=self.team)
         self.bot_token = "123456:ABCdef_test_token"
         self.chat_id = "-1001234567890"
         self.config = MessagingServiceConfig.objects.create(
-            project=self.project,
+            team=self.team,
             display_name="Test Telegram",
             kind="telegram",
             config=json.dumps(
@@ -523,6 +524,7 @@ class TestTelegramBackend(DjangoTestCase):
                 }
             ),
         )
+        self.config.projects.add(self.project)
 
     def test_backend_class_is_registered(self):
         self.assertIsInstance(self.config.get_backend(), TelegramBackend)
@@ -713,13 +715,15 @@ class TestTelegramBackend(DjangoTestCase):
 
 class TestCustomBackendErrorHandling(DjangoTestCase):
     def setUp(self):
-        self.project = Project.objects.create(name="Test project")
+        self.team = Team.objects.create(name="Test team")
+        self.project = Project.objects.create(name="Test project", team=self.team)
         self.config = MessagingServiceConfig.objects.create(
-            project=self.project,
+            team=self.team,
             display_name="Test Custom",
             kind="custom",
             config=json.dumps({"webhook_url": "https://hooks.example.com/test"}),
         )
+        self.config.projects.add(self.project)
 
     @patch('alerts.service_backends.base.BaseWebhookBackend.safe_post')
     def test_custom_test_message_success_clears_failure_status(self, mock_post):
