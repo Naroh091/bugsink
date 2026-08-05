@@ -23,9 +23,11 @@ DEBUG = True
 if os.getenv("DB", "sqlite") == "mysql":
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bugsink',
+        'NAME': os.environ.get("DB_NAME", "bugsink"),
         'USER': os.environ["DB_USER"],
         'PASSWORD': os.environ["DB_PASSWORD"],
+        'HOST': os.environ.get("DB_HOST", "127.0.0.1"),
+        'PORT': os.environ.get("DB_PORT", "3306"),
     }
 
 elif os.getenv("DB", "sqlite") == "postgres":
@@ -174,7 +176,15 @@ LOGGING["formatters"]["snappea"]["format"] = "{asctime} - {threadName} - {leveln
 # sending during development
 LOGGING['loggers']['bugsink.email']['level'] = "INFO"
 
-ALLOWED_HOSTS = deduce_allowed_hosts(BUGSINK["BASE_URL"])
+ALLOWED_HOSTS = deduce_allowed_hosts(BUGSINK["BASE_URL"]) + [
+    os.getenv("EXTRA_ALLOWED_HOST", ""),
+    "8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
+]
+
+if not I_AM_RUNNING == "TEST":
+    CSRF_TRUSTED_ORIGINS = [
+        "https://8000--main--bugsink--dfernandez.coder.fundacionmaldita.es",
+    ]
 
 # django-tailwind setting; the below allows for environment-variable overriding of the npm binary path.
 NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", "npm")

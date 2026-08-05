@@ -121,6 +121,7 @@ BUGSINK_APPS = [
     'releases',
     'ingest',
     'issues',
+    'dashboard',
     'files',
     'events',
     'tags',

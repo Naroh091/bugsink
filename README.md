@@ -5,10 +5,20 @@
 * [Sentry-SDK compatible](https://www.bugsink.com/connect-any-application/)
 * [Scalable and reliable](https://www.bugsink.com/scalable-and-reliable/)
 
-### Screenshot
+## About this fork
 
-![Screenshot](https://www.bugsink.com/static/images/JsonSchemaDefinitionException.5e02c1544273.png)
+This fork extends Bugsink with a focus on **multi-project workflows**. Key improvements include:
 
+- **Cross-project dashboard** -- A new overview dashboard that surfaces issues across all teams and projects, giving you a big-picture view of the state of things at a glance.
+- **Reusable messaging services** -- Define Slack, Discord, or Mattermost webhooks once at the team level and attach them to any number of projects, instead of duplicating configuration per project.
+- **Issue charts** -- Inline [sparkline charts](docs/sparkline-charts.md) on the dashboard, project list, issue list, and issue detail sidebar that combine a 14-day daily trend with 24-hour hourly detail, complete with hover tooltips and peak highlighting.
+- **Redesigned UI** -- Screens have been reworked to make better use of available space, keeping things clean and efficient as you navigate between projects.
+
+For detailed documentation on these features, see the [docs/](docs/) folder.
+
+A big thank you to [@vanschelven](https://github.com/vanschelven) for building Bugsink and making it open source. This fork wouldn't exist without that foundation.
+
+-- David
 
 ### Installation & docs
 
@@ -33,3 +43,4 @@ Now, you can [set up your first project](https://www.bugsink.com/docs/quickstart
 [Detailed installation instructions](https://www.bugsink.com/docs/installation/) are on the Bugsink website.
 
 [More information and documentation](https://www.bugsink.com/)
+

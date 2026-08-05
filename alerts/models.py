@@ -1,5 +1,4 @@
 from django.db import models
-from projects.models import Project
 
 from .service_backends.slack import SlackBackend
 from .service_backends.mattermost import MattermostBackend
@@ -35,7 +34,7 @@ def get_alert_service_backend_class(kind):
 
 
 class MessagingServiceConfig(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING, related_name="service_configs")
+    project = models.ForeignKey("projects.Project", on_delete=models.DO_NOTHING, related_name="service_configs")
     display_name = models.CharField(max_length=100, blank=False,
                                     help_text='For display in the UI, e.g. "#general on company Slack"')
 

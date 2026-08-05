@@ -7,22 +7,21 @@
 
 {% block content %}
 
-
 <div class="flex items-center justify-center">
 
-    <div class="m-4 max-w-4xl flex-auto">
+    <div class="m-4 max-w-lg w-full">
         <form action="." method="post">
         {% csrf_token %}
 
-        <div>
-            <h1 class="text-4xl my-4 font-bold">{% translate "New Team" %}</h1>
-        </div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-4 mb-4">{% translate "New Team" %}</h1>
 
         {% tailwind_formfield form.name %}
         {% tailwind_formfield form.visibility %}
 
-        <button name="action" value="invite" class="font-bold text-slate-800 dark:text-slate-100 border-slate-500 dark:border-slate-400 pl-4 pr-4 pb-2 pt-2 border-2 bg-cyan-200 dark:bg-cyan-700 hover:bg-cyan-400 dark:hover:bg-cyan-600 active:ring-3 rounded-md">{% translate "Save" %}</button>
-        <a href="{% url "team_list" %}" class="text-cyan-500 dark:text-cyan-300 font-bold ml-2">{% translate "Cancel" %}</a>
+        <div class="flex items-center gap-3 mt-2">
+            <button name="action" value="invite" class="font-semibold text-sm text-slate-800 dark:text-slate-100 border border-slate-500 dark:border-slate-400 px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 active:ring-3 rounded-md">{% translate "Save" %}</button>
+            <a href="{% url "team_list" %}" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">{% translate "Cancel" %}</a>
+        </div>
 
         </form>
 

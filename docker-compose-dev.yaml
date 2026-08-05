@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_USER: db
+      MYSQL_PASSWORD: root  # Change this
+      MYSQL_DATABASE: db
+      MYSQL_ROOT_PASSWORD: root  # Change this
+    ports:
+      - "3306:3306"
+    volumes:
+      - /home/coder/db-data:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin ping -h db
+      retries: 5
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+
+  web:
+    image: bugsink/bugsink:2
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: django-insecure-RMLYThim9NybWgXiUGat32Aa0Qbgqscf4NPDQuZO2glcZPOiXn  # Change this (and remove django-insecure prefix), e.g. openssl rand -base64 50
+      CREATE_SUPERUSER: email:password  # Change this (or remove it and execute 'createsuperuser' against the running container)
+      PORT: 8000
+      DATABASE_URL: mysql://bugsinkuser:your_super_secret_password@db:3306/bugsink # Change password to match MYSQL_PASSWORD above
+      BEHIND_HTTPS_PROXY: "false"  # Change this for setups behind a proxy w/ ssl enabled
+      BASE_URL: "http://localhost:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import requests; requests.get(\"http://localhost:8000/\").raise_for_status()'"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
+

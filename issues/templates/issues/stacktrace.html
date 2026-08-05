@@ -8,19 +8,6 @@
 {% block tab_content %}
 
 {% if not exceptions %}
-    {# event-nav only #}
-    <div class="flex">
-        <div class="overflow-hidden">
-            <div class="italic">{{ event.ingested_at|date:"j M G:i T" }} (Event {{ event.digest_order|intcomma }} of {{ issue.digested_event_count|intcomma }} total{% if q %} — {{ event_qs_count|intcomma }} found by search{% endif %})</div>
-        </div>
-
-        <div class="ml-auto flex-none">
-            <div class="flex place-content-end">
-                {% include "issues/_event_nav.html" %}
-            </div>
-        </div>
-    </div>
-
     <div class="mt-6 mb-6 italic">
         {% translate "No stacktrace available for this event." %}
     </div>
