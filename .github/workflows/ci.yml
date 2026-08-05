@@ -226,8 +226,8 @@ jobs:
           # 3) HEAD / and check redirect to /teams/
           curl -sS -b cookies.txt -I http://localhost:8000/ > headers_root.txt
 
-          if ! grep -qi '^Location: /dashboard/' headers_root.txt; then
-            echo "Expected redirect to /dashboard/ not found"
+          if ! grep -qi '^Location: /teams/' headers_root.txt; then
+            echo "Expected redirect to /teams/ not found"
             echo "--- / (status + Location):"
             sed -n '1p;/^Location:/Ip' headers_root.txt
             echo "--- cookies (names):"
