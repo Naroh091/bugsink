@@ -1,6 +1,22 @@
 from unittest import TestCase
 
-from .conf_utils import parse_database_url
+from .conf_utils import deduce_mcp_url, parse_database_url
+
+
+class DeduceMcpUrlTestCase(TestCase):
+
+    def test_no_proxy_uses_the_mcp_port_on_the_base_url_host(self):
+        self.assertEqual("http://localhost:8100/mcp", deduce_mcp_url("http://localhost:8000", "", "8100"))
+
+    def test_explicit_mcp_url_wins(self):
+        self.assertEqual(
+            "https://bugsink.example.com/mcp",
+            deduce_mcp_url("https://bugsink.example.com", "https://bugsink.example.com/mcp", "8100"))
+
+    def test_explicit_mcp_url_trailing_slash_is_normalized(self):
+        self.assertEqual(
+            "https://bugsink.example.com/mcp",
+            deduce_mcp_url("https://bugsink.example.com", "https://bugsink.example.com/mcp/", "8100"))
 
 
 class ParseDatabaseUrlTestCase(TestCase):

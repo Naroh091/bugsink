@@ -46,7 +46,28 @@ Tokens are the same ones used by the REST API and can be created via the admin U
 python manage.py create_auth_token
 ```
 
-Requests without a valid token receive a `401 Unauthorized` JSON response before they reach any tool.
+Requests without a valid token receive a `401 Unauthorized` JSON response before they reach any tool, carrying a
+`WWW-Authenticate: Bearer` challenge as required by RFC 6750.
+
+Note that a token grants access to the whole instance: there is no per-user scoping and no read-only mode, so any
+valid token can read every team and project and can also create and update them.
+
+## Running Behind a Reverse Proxy
+
+The MCP SDK enables DNS-rebinding protection by default, and it only accepts `Host` headers pointing at localhost.
+Behind a reverse proxy that serves a public hostname, **every request is rejected with `421 Misdirected Request`**
+before it reaches authentication — the most common reason a remote client cannot connect.
+
+The allowlist is derived from `BASE_URL`, so the fix is configuration, not code: set `BASE_URL` to the public URL of
+your Bugsink instance. Both `example.com` and `example.com:<any port>` are then accepted, alongside localhost.
+
+The proxy must pass the original `Host` header through (Traefik and nginx do by default), must not strip the path
+prefix (the server serves `/mcp` itself), and must not buffer responses — the transport is server-sent events. Give
+the proxy a generous idle timeout for the same reason; MCP streams stay open without traffic.
+
+Because the MCP server listens on its own port, the connect page cannot know the public URL. Set `MCP_URL` to what
+clients should configure, e.g. `https://bugsink.example.com/mcp`. Left empty, the page assumes a direct connection
+and points at `MCP_PORT` on `BASE_URL`'s host.
 
 ## Connecting from Claude Code
 

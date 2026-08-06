@@ -9,10 +9,14 @@ LLMs can autonomously investigate issues.  Runs as a standalone ASGI process
 import asyncio
 import json
 import logging
+from urllib.parse import urlparse
 
 from starlette.responses import JSONResponse
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
+from mcp.server.transport_security import TransportSecuritySettings
+
+from bugsink.version import __version__
 
 logger = logging.getLogger("bugsink.mcp")
 
@@ -36,23 +40,32 @@ class BearerAuthMiddleware:
             auth = headers.get(b"authorization", b"").decode()
 
             if not auth.startswith("Bearer "):
-                response = JSONResponse({"error": "Missing or invalid Authorization header"}, status_code=401)
-                await response(scope, receive, send)
+                await self._unauthorized(scope, receive, send, "Authentication required")
                 return
 
             raw = auth[7:].strip()
             if len(raw) != 40 or any(c not in "0123456789abcdef" for c in raw):
-                response = JSONResponse({"error": "Malformed Bearer token"}, status_code=401)
-                await response(scope, receive, send)
+                await self._unauthorized(scope, receive, send, "Malformed Bearer token")
                 return
 
             token_obj = await asyncio.to_thread(self._lookup_token, raw)
             if token_obj is None:
-                response = JSONResponse({"error": "Invalid Bearer token"}, status_code=401)
-                await response(scope, receive, send)
+                await self._unauthorized(scope, receive, send, "Invalid Bearer token")
                 return
 
         await self.app(scope, receive, send)
+
+    @staticmethod
+    async def _unauthorized(scope, receive, send, description):
+        # RFC 6750: a 401 must carry a WWW-Authenticate challenge, or clients have no way to learn how to
+        # authenticate. Shape matches the MCP SDK's own BearerAuthMiddleware; the resource_metadata parameter is
+        # omitted because we do not serve OAuth protected-resource metadata (tokens are provisioned out of band).
+        response = JSONResponse(
+            {"error": "invalid_token", "error_description": description},
+            status_code=401,
+            headers={"WWW-Authenticate": f'Bearer error="invalid_token", error_description="{description}"'},
+        )
+        await response(scope, receive, send)
 
     @staticmethod
     def _lookup_token(raw):
@@ -237,9 +250,29 @@ def _json_result(data):
     return json.dumps(data, default=str)
 
 
+def _deduce_transport_security():
+    """Host/Origin allowlist for the SDK's DNS-rebinding protection.
+
+    That protection only accepts localhost by default, so behind a reverse proxy every request is rejected with a 421
+    before it reaches any tool. The public hostname comes from BASE_URL; ":*" allows any port.
+    """
+    from bugsink.app_settings import get_settings
+
+    base_url = get_settings().BASE_URL
+    hostname = urlparse(base_url).hostname
+
+    allowed_hosts = ["localhost", "localhost:*", "127.0.0.1", "127.0.0.1:*"]
+    if hostname and hostname not in allowed_hosts:
+        allowed_hosts += [hostname, f"{hostname}:*"]
+
+    # Origin is only sent by browser-based clients; absent Origin is allowed by the SDK, so server-to-server
+    # clients (Claude Code, the Claude connectors) are unaffected by this list.
+    return TransportSecuritySettings(allowed_hosts=allowed_hosts, allowed_origins=[base_url])
+
+
 def create_mcp_server():
-    """Create and return a FastMCP instance with all Bugsink tools registered."""
-    mcp = FastMCP("Bugsink", instructions=(
+    """Create and return an MCPServer instance with all Bugsink tools registered."""
+    mcp = MCPServer("Bugsink", version=__version__, instructions=(
         "Bugsink MCP server. Use these tools to investigate issues, inspect stacktraces, "
         "and manage teams/projects/releases."
     ))
@@ -369,9 +402,12 @@ def run_mcp_server(host="127.0.0.1", port=8100, path="/mcp"):
 
     mcp = create_mcp_server()
 
-    # streamable_http_app() already registers the route at /mcp internally,
-    # so we wrap it directly with the auth middleware instead of double-mounting.
-    app = BearerAuthMiddleware(mcp.streamable_http_app())
+    # streamable_http_app() already registers the route itself, so we wrap it directly with the auth middleware
+    # instead of double-mounting.
+    app = BearerAuthMiddleware(mcp.streamable_http_app(
+        streamable_http_path=path,
+        transport_security=_deduce_transport_security(),
+    ))
 
     logger.info("Starting MCP server on %s:%s%s", host, port, path)
     uvicorn.run(app, host=host, port=port, log_level="info")

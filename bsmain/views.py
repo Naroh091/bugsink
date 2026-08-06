@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, urlunparse
+import os
 
 from django.shortcuts import render, redirect
 from django.http import Http404
@@ -7,12 +7,14 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils.translation import gettext_lazy as _
 
 from bugsink.app_settings import get_settings
+from bugsink.conf_utils import deduce_mcp_url
 from bugsink.decorators import atomic_for_request_method
 
 from .models import AuthToken
 
 
-MCP_PORT = 8100
+# matches the run_mcp_server default; the Docker image overrides both via MCP_PORT
+MCP_PORT = os.environ.get("MCP_PORT", "8100")
 
 
 @atomic_for_request_method
@@ -44,11 +46,8 @@ def auth_token_list(request):
 
 @user_passes_test(lambda u: u.is_superuser)
 def mcp_connect(request):
-    parsed = urlparse(get_settings().BASE_URL)
-    mcp_base = urlunparse(parsed._replace(netloc=f"{parsed.hostname}:{MCP_PORT}"))
-    mcp_url = mcp_base.rstrip("/") + "/mcp"
     return render(request, 'bsmain/mcp_connect.html', {
-        'mcp_url': mcp_url,
+        'mcp_url': deduce_mcp_url(get_settings().BASE_URL, get_settings().MCP_URL, MCP_PORT),
     })
 
 

@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, urlunparse, unquote
 
 
 from .version import version
@@ -51,6 +51,21 @@ def deduce_script_name(base_url):
         return None
 
     return path if path not in (None, "", "/") else None
+
+
+def deduce_mcp_url(base_url, mcp_url, mcp_port):
+    """Public URL of the MCP endpoint, for display on the connect page.
+
+    An explicit MCP_URL wins: behind a reverse proxy the MCP server is served on the regular port (and possibly a
+    different path), which cannot be deduced from BASE_URL. Without it we assume a direct connection to the MCP
+    server's own port on the same host.
+    """
+    if mcp_url:
+        return mcp_url.rstrip("/")
+
+    parsed = urlparse(base_url)
+    netloc = f"{parsed.hostname}:{mcp_port}" if parsed.hostname else parsed.netloc
+    return urlunparse(parsed._replace(netloc=netloc)).rstrip("/") + "/mcp"
 
 
 def parse_database_url(url):

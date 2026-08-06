@@ -27,6 +27,11 @@ DEFAULTS = {
     "BASE_URL": f"http://localhost:{_PORT}",  # no trailing slash
     "SITE_TITLE": "Bugsink",  # you can customize this as e.g. "My Bugsink" or "Bugsink for My Company"
 
+    # Public URL of the MCP endpoint, as clients should configure it. Empty means "not behind a proxy": the connect
+    # page then points at BASE_URL's host on the MCP server's own port. Set this when a reverse proxy serves the MCP
+    # server on the regular port, e.g. "https://bugsink.example.com/mcp".
+    "MCP_URL": "",
+
     # Users, teams, projects
     # if True, there is only one user, and all projects are owned by that user; this is somewhat implied by
     # USER_REGISTRATION: CB_NOBODY, but I'd rather be even more explicit than that. e.g. SINGLE_USER obviously implies

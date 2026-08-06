@@ -127,6 +127,10 @@ BUGSINK = {
     # The URL where the Bugsink instance is hosted. This is used in the email notifications and to construct DSNs.
     "BASE_URL": os.getenv("BASE_URL", f"http://localhost:{_PORT}"),  # no trailing slash
 
+    # Public URL of the MCP endpoint. Set this when a reverse proxy serves the MCP server on the regular port, e.g.
+    # "https://bugsink.example.com/mcp"; leave it empty to point clients at MCP_PORT on BASE_URL's host directly.
+    "MCP_URL": os.getenv("MCP_URL", ""),
+
     # you can customize this as e.g. "My Bugsink" or "Bugsink for My Company"
     "SITE_TITLE": os.getenv("SITE_TITLE", "Bugsink"),
 
