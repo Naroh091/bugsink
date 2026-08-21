@@ -183,10 +183,7 @@
               </div>
           </div>
           <div class="flex-1">{% translate "Issue" %}</div>
-          <div class="hidden md:block w-48 text-center">{% translate "Evolution" %}</div>
-          <div class="hidden sm:block w-28 text-right">{% translate "Last Seen" %}</div>
-          <div class="hidden sm:block w-24 text-right">{% translate "Age" %}</div>
-          <div class="hidden sm:block w-20 text-right pr-2">{% translate "Events" %}</div>
+          <div class="hidden sm:block pr-1">{% translate "Evolution" %}</div>
       </div>
 
       <!-- Issue rows -->
@@ -197,8 +194,7 @@
                         <input type="checkbox" {% if issue.id in unapplied_issue_ids %}checked{% endif %} name="issue_ids[]" value="{{ issue.id }}" class="dark:bg-slate-900 checked:dark:bg-cyan-500 border-cyan-800 dark:border-cyan-400 text-cyan-500 dark:text-cyan-300 focus:ring-cyan-200 dark:focus:ring-cyan-700 cursor-pointer js-issue-checkbox w-4 h-4" onclick="event.stopPropagation(); matchMainCheckboxStateToIssueCheckboxes()"/>
                     </div>
                 </div>
-            </td>
-            <td class="w-full ml-0 pb-4 pt-4 pr-4">
+                <div class="flex-1 min-w-0">
                 <div class="flex items-end gap-4">
                 <div class="min-w-0 flex-1">
                 <div>
@@ -219,9 +215,8 @@
                     {% include "events/_compact_event_sparkline.html" with event_sparkline=issue.list_sparkline %}
                 </div>
                 </div>
-            </td>
-
-            </tr>
+                </div>
+            </div>
             {% empty %}
             <div class="py-8 text-center">
                 <div class="text-lg font-semibold text-slate-400 dark:text-slate-500">
@@ -330,6 +325,7 @@
         {% endif %}
     </div> {# 'footer' (containing the icons as well as the pagination) #}
 
+</div>
 </div>
 
 {% endblock %}
