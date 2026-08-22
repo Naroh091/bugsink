@@ -87,7 +87,7 @@ Add a remote MCP server entry in your Claude Code config (`.claude/settings.json
 }
 ```
 
-Once connected, all 16 tools appear automatically in Claude Code.
+Once connected, all 29 tools appear automatically in Claude Code.
 
 ## Available Tools
 
@@ -95,7 +95,7 @@ Once connected, all 16 tools appear automatically in Claude Code.
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `list_teams` | `limit=50`, `order="asc"` | List all teams |
+| `list_teams` | `limit=50`, `order="asc"`, `page?`, `per_page?` | List all teams |
 | `get_team` | `team_id` (UUID) | Get a team by ID |
 | `create_team` | `name`, `visibility?` | Create a new team |
 | `update_team` | `team_id`, `name?`, `visibility?` | Update a team's fields |
@@ -104,27 +104,42 @@ Once connected, all 16 tools appear automatically in Claude Code.
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `list_projects` | `team_id?`, `limit=50`, `order="asc"` | List projects, optionally filtered by team |
+| `list_projects` | `team_id?`, `limit=50`, `order="asc"`, `page?`, `per_page?` | List projects, optionally filtered by team |
 | `get_project` | `project_id` (int) | Get a project by ID |
 | `create_project` | `team_id`, `name` | Create a project under a team |
 | `update_project` | `project_id`, optional fields | Update a project's settings |
 
 `update_project` accepts: `name`, `visibility`, `alert_on_new_issue`, `alert_on_regression`, `alert_on_unmute`, `retention_max_event_count`.
 
-### Issues (read-only)
+### Issues
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `list_issues` | `project_id` (required), `sort="last_seen"`, `order="desc"`, `limit=50` | List issues for a project |
+| `list_issues` | `project_id` (required), `sort`, `order`, `state`, `limit`, `page?`, `per_page?` | List issues with optional state filter |
 | `get_issue` | `issue_id` (UUID) | Get an issue by ID |
+| `search_issues` | `query?`, `project_id?`, `state`, `sort`, `order`, `limit`, `page?`, `per_page?` | Search issues across projects |
+| `resolve_issue` | `issue_id` | Mark an issue as resolved |
+| `reopen_issue` | `issue_id` | Reopen a resolved issue |
+| `resolve_issue_next_release` | `issue_id` | Resolve until next release |
+| `mute_issue` | `issue_id`, `period_name?`, `nr_of_periods?`, `gte_threshold?` | Mute an issue (optionally for a period or threshold) |
+| `unmute_issue` | `issue_id` | Unmute an issue |
+| `get_issue_stats` | `project_id?` | Get issue statistics (counts by status, recent activity) |
+| `get_project_issue_summary` | `project_id` | Get project issue summary with top 10 by event count |
+| `list_issue_history` | `issue_id`, `limit?` | Get issue change history (resolved, muted, etc.) |
+| `add_issue_comment` | `issue_id`, `comment` | Add a comment to an issue |
+| `list_issue_comments` | `issue_id`, `limit?` | List comments on an issue |
+| `bulk_resolve_issues` | `issue_ids` (list), `dry_run?` | Bulk resolve issues with preview mode |
+| `bulk_mute_issues` | `issue_ids` (list), `period_name?`, `nr_of_periods?`, `gte_threshold?`, `dry_run?` | Bulk mute issues with preview mode |
 
-Valid `sort` values: `last_seen`, `digest_order`.
+Valid `sort` values: `last_seen`, `digest_order`, `digested_event_count`.
+
+Valid `state` values: `open` (default, unresolved+unmuted), `unresolved`, `resolved`, `muted`, `all`.
 
 ### Events (read-only)
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `list_events` | `issue_id` (required), `order="desc"`, `limit=50` | List events for an issue |
+| `list_events` | `issue_id` (required), `order="desc"`, `limit=50`, `page?`, `per_page?` | List events for an issue |
 | `get_event` | `event_id` (UUID) | Get full event data including parsed JSON and stacktrace markdown |
 | `get_event_stacktrace` | `event_id` (UUID) | Get stacktrace as markdown (frames, source context, locals) |
 
@@ -134,13 +149,23 @@ Valid `sort` values: `last_seen`, `digest_order`.
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `list_releases` | `project_id` (required), `order="desc"`, `limit=50` | List releases for a project |
+| `list_releases` | `project_id` (required), `order="desc"`, `limit=50`, `page?`, `per_page?` | List releases for a project |
 | `get_release` | `release_id` (UUID) | Get a release by ID |
 | `create_release` | `project_id`, `version` | Create a new release |
 
 ### Pagination
 
-All list tools accept a `limit` parameter (default 50, max 250). This is intentionally simple — LLMs typically need the first N results rather than cursor-based pagination.
+All list tools accept a `limit` parameter (default 50, max 250). For explicit pagination, use `page` (1-based) and `per_page`. When paginated, the response includes:
+
+```json
+{
+  "items": [...],
+  "total": 150,
+  "page": 1,
+  "per_page": 50,
+  "has_more": true
+}
+```
 
 ## Implementation Details
 
@@ -154,16 +179,19 @@ All list tools accept a `limit` parameter (default 50, max 250). This is intenti
 **Pattern — sync helper + async tool:**
 
 ```python
-def _sync_list_issues(project_id, sort, order, limit):
+def _sync_list_issues(project_id, sort, order, state, limit):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
     ordering = _build_ordering(sort, order)
-    qs = Issue.objects.filter(project_id=project_id, is_deleted=False).order_by(*ordering)[:limit]
+    qs = Issue.objects.filter(project_id=project_id, is_deleted=False)
+    if state and state != "all":
+        qs = _apply_state_filter(qs, state)
+    qs = qs.order_by(*ordering)[:limit]
     return IssueSerializer(qs, many=True).data
 
 @mcp.tool(description="List issues for a project.")
-async def list_issues(project_id: int, sort: str = "last_seen", order: str = "desc", limit: int = 50) -> str:
-    result = await asyncio.to_thread(_sync_list_issues, project_id, sort, order, _clamp_limit(limit))
+async def list_issues(project_id: int, sort: str = "last_seen", order: str = "desc", state: str = "open", limit: int = 50) -> str:
+    result = await asyncio.to_thread(_sync_list_issues, project_id, sort, order, state, _clamp_limit(limit))
     return json.dumps(result, default=str)
 ```
 
