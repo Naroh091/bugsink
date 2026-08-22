@@ -81,6 +81,21 @@ def _clamp_limit(limit):
     return max(1, min(int(limit), MAX_LIMIT))
 
 
+def _paginate(items, page, per_page):
+    """Wrap a list of items in a pagination envelope."""
+    total = len(items)
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_items = items[start:end]
+    return {
+        "items": page_items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "has_more": end < total,
+    }
+
+
 def _build_ordering(field, order):
     prefix = "-" if order == "desc" else ""
     return [f"{prefix}{field}"]
@@ -174,20 +189,273 @@ def _sync_update_project(project_id, **fields):
 
 # -- Issues --
 
-def _sync_list_issues(project_id, sort, order, limit):
+def _sync_list_issues(project_id, sort, order, state, limit):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
     ordering = _build_ordering(sort, order)
     if sort == "last_seen":
         ordering.append("-id" if order == "desc" else "id")
-    qs = Issue.objects.filter(project_id=project_id, is_deleted=False).order_by(*ordering)[:limit]
+    qs = Issue.objects.filter(project_id=project_id, is_deleted=False)
+    if state and state != "all":
+        qs = _apply_state_filter(qs, state)
+    qs = qs.order_by(*ordering)[:limit]
     return IssueSerializer(qs, many=True).data
+
+
+def _apply_state_filter(qs, state):
+    filters = {
+        "open": {"is_resolved": False, "is_muted": False},
+        "unresolved": {"is_resolved": False},
+        "resolved": {"is_resolved": True, "is_muted": False},
+        "muted": {"is_resolved": False, "is_muted": True},
+    }
+    if state in filters:
+        return qs.filter(**filters[state])
+    return qs
+
+
+def _sync_search_issues(project_id, query, state, sort, order, limit):
+    from django.db.models import Q
+    from issues.models import Issue
+    from issues.serializers import IssueSerializer
+    ordering = _build_ordering(sort, order)
+    if sort == "last_seen":
+        ordering.append("-id" if order == "desc" else "id")
+    qs = Issue.objects.filter(is_deleted=False)
+    if project_id is not None:
+        qs = qs.filter(project_id=project_id)
+    if query:
+        qs = qs.filter(Q(calculated_type__icontains=query) | Q(calculated_value__icontains=query))
+    if state and state != "all":
+        qs = _apply_state_filter(qs, state)
+    qs = qs.order_by(*ordering)[:limit]
+    return IssueSerializer(qs, many=True).data
+
+
+def _sync_get_issue_stats(project_id):
+    from datetime import timedelta
+    from django.db.models import Count, Q
+    from django.utils import timezone
+    from issues.models import Issue
+
+    qs = Issue.objects.filter(is_deleted=False)
+    if project_id is not None:
+        qs = qs.filter(project_id=project_id)
+
+    now = timezone.now()
+    seven_days_ago = now - timedelta(days=7)
+
+    counts = qs.aggregate(
+        unresolved=Count("id", filter=Q(is_resolved=False, is_muted=False)),
+        resolved=Count("id", filter=Q(is_resolved=True, is_muted=False)),
+        muted=Count("id", filter=Q(is_resolved=False, is_muted=True)),
+        total=Count("id"),
+    )
+
+    new_issues_7d = qs.filter(first_seen__gte=seven_days_ago).count()
+    recent_events_7d = qs.filter(last_seen__gte=seven_days_ago).aggregate(
+        total=Count("digested_event_count")
+    )["total"]
+
+    return {
+        **counts,
+        "new_issues_7d": new_issues_7d,
+        "recent_events_7d": recent_events_7d,
+    }
+
+
+def _sync_get_project_issue_summary(project_id):
+    from issues.models import Issue
+    from issues.serializers import IssueSerializer
+
+    qs = Issue.objects.filter(project_id=project_id, is_deleted=False)
+
+    stats = _sync_get_issue_stats(project_id)
+
+    top_issues = qs.order_by("-digested_event_count", "-last_seen")[:10]
+
+    return {
+        "stats": stats,
+        "top_issues": IssueSerializer(top_issues, many=True).data,
+    }
+
+
+def _sync_get_issue_history(issue_id, limit):
+    from issues.models import Issue, TurningPoint
+
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+
+    turning_points = TurningPoint.objects.filter(issue=issue).order_by("-timestamp", "-id")[:limit]
+
+    return {
+        "issue_id": str(issue.id),
+        "friendly_id": issue.friendly_id,
+        "history": [
+            {
+                "id": tp.id,
+                "kind": tp.get_kind_display(),
+                "timestamp": tp.timestamp,
+                "user": tp.user_id,
+                "comment": tp.comment,
+            }
+            for tp in turning_points
+        ],
+    }
+
+
+def _sync_add_issue_comment(issue_id, comment):
+    from issues.models import Issue
+    from issues.serializers import IssueCommentSerializer
+
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+
+    serializer = IssueCommentSerializer(data={"issue": str(issue.id), "comment": comment})
+    serializer.is_valid(raise_exception=True)
+    turning_point = serializer.save()
+
+    return {
+        "id": turning_point.id,
+        "issue": str(turning_point.issue_id),
+        "project": turning_point.project_id,
+        "timestamp": turning_point.timestamp,
+        "comment": turning_point.comment,
+        "user": turning_point.user_id,
+    }
+
+
+def _sync_list_issue_comments(issue_id, limit):
+    from issues.models import Issue, TurningPoint, TurningPointKind
+
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+
+    turning_points = TurningPoint.objects.filter(
+        issue=issue,
+        kind=TurningPointKind.MANUAL_ANNOTATION,
+    ).order_by("-timestamp", "-id")[:limit]
+
+    return [
+        {
+            "id": tp.id,
+            "timestamp": tp.timestamp,
+            "comment": tp.comment,
+            "user": tp.user_id,
+        }
+        for tp in turning_points
+    ]
+
+
+def _sync_bulk_resolve_issues(issue_ids, dry_run):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+
+    results = []
+    for issue_id in issue_ids:
+        try:
+            issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+            if issue.is_resolved:
+                results.append({"issue_id": issue_id, "status": "skipped", "reason": "already resolved"})
+                continue
+            if dry_run:
+                results.append({"issue_id": issue_id, "status": "would_resolve", "issue": IssueSerializer(issue).data})
+            else:
+                apply_issue_action(IssueStateManager, issue, "resolve", user=None)
+                issue.save()
+                results.append({"issue_id": issue_id, "status": "resolved", "issue": IssueSerializer(issue).data})
+        except Issue.DoesNotExist:
+            results.append({"issue_id": issue_id, "status": "error", "reason": "not found"})
+
+    return results
+
+
+def _sync_bulk_mute_issues(issue_ids, period_name, nr_of_periods, gte_threshold, dry_run):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+
+    results = []
+    for issue_id in issue_ids:
+        try:
+            issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+            if issue.is_muted:
+                results.append({"issue_id": issue_id, "status": "skipped", "reason": "already muted"})
+                continue
+            if issue.is_resolved:
+                results.append({"issue_id": issue_id, "status": "skipped", "reason": "resolved issues cannot be muted"})
+                continue
+
+            if gte_threshold is not None:
+                action = f"mute_until:{period_name},{nr_of_periods},{gte_threshold}"
+            elif period_name is not None:
+                action = f"mute_for:{period_name},{nr_of_periods},"
+            else:
+                action = "mute"
+
+            if dry_run:
+                results.append({"issue_id": issue_id, "status": "would_mute", "issue": IssueSerializer(issue).data})
+            else:
+                apply_issue_action(IssueStateManager, issue, action, user=None)
+                issue.save()
+                results.append({"issue_id": issue_id, "status": "muted", "issue": IssueSerializer(issue).data})
+        except Issue.DoesNotExist:
+            results.append({"issue_id": issue_id, "status": "error", "reason": "not found"})
+
+    return results
 
 
 def _sync_get_issue(issue_id):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
     issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    return IssueSerializer(issue).data
+
+
+def _sync_resolve_issue(issue_id):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    apply_issue_action(IssueStateManager, issue, "resolve", user=None)
+    issue.save()
+    return IssueSerializer(issue).data
+
+
+def _sync_reopen_issue(issue_id):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    apply_issue_action(IssueStateManager, issue, "reopen", user=None)
+    issue.save()
+    return IssueSerializer(issue).data
+
+
+def _sync_resolve_issue_next_release(issue_id):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    apply_issue_action(IssueStateManager, issue, "resolved_next", user=None)
+    issue.save()
+    return IssueSerializer(issue).data
+
+
+def _sync_mute_issue(issue_id, period_name, nr_of_periods, gte_threshold):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    if gte_threshold is not None:
+        action = f"mute_until:{period_name},{nr_of_periods},{gte_threshold}"
+    elif period_name is not None:
+        action = f"mute_for:{period_name},{nr_of_periods},"
+    else:
+        action = "mute"
+    apply_issue_action(IssueStateManager, issue, action, user=None)
+    issue.save()
+    return IssueSerializer(issue).data
+
+
+def _sync_unmute_issue(issue_id):
+    from issues.models import Issue, IssueStateManager, apply_issue_action
+    from issues.serializers import IssueSerializer
+    issue = Issue.objects.get(pk=issue_id, is_deleted=False)
+    apply_issue_action(IssueStateManager, issue, "unmute", user=None)
+    issue.save()
     return IssueSerializer(issue).data
 
 
@@ -280,8 +548,16 @@ def create_mcp_server():
     # -- Teams --
 
     @mcp.tool(description="List teams. Returns team id, name, and visibility.")
-    async def list_teams(limit: int = DEFAULT_LIMIT, order: str = "asc") -> str:
-        result = await asyncio.to_thread(_sync_list_teams, _clamp_limit(limit), order)
+    async def list_teams(
+        limit: int = DEFAULT_LIMIT,
+        order: str = "asc",
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
+    ) -> str:
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(_sync_list_teams, effective_limit, order)
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
         return _json_result(result)
 
     @mcp.tool(description="Get a single team by UUID.")
@@ -302,8 +578,17 @@ def create_mcp_server():
     # -- Projects --
 
     @mcp.tool(description="List projects. Optionally filter by team UUID. Hides soft-deleted projects.")
-    async def list_projects(team_id: str | None = None, limit: int = DEFAULT_LIMIT, order: str = "asc") -> str:
-        result = await asyncio.to_thread(_sync_list_projects, team_id, _clamp_limit(limit), order)
+    async def list_projects(
+        team_id: str | None = None,
+        limit: int = DEFAULT_LIMIT,
+        order: str = "asc",
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
+    ) -> str:
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(_sync_list_projects, team_id, effective_limit, order)
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
         return _json_result(result)
 
     @mcp.tool(description="Get a single project by integer ID.")
@@ -338,14 +623,24 @@ def create_mcp_server():
 
     # -- Issues --
 
-    @mcp.tool(description="List issues for a project. Defaults to most recently seen first.")
+    @mcp.tool(description=(
+        "List issues for a project. Defaults to most recently seen first. "
+        "Use state to filter: open (default, unresolved+unmuted), unresolved, resolved, muted, or all. "
+        "For pagination, set page (1-based) and per_page; response includes total, has_more."
+    ))
     async def list_issues(
         project_id: int,
         sort: str = "last_seen",
         order: str = "desc",
+        state: str = "open",
         limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
     ) -> str:
-        result = await asyncio.to_thread(_sync_list_issues, project_id, sort, order, _clamp_limit(limit))
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(_sync_list_issues, project_id, sort, order, state, effective_limit)
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
         return _json_result(result)
 
     @mcp.tool(description="Get a single issue by UUID.")
@@ -353,11 +648,135 @@ def create_mcp_server():
         result = await asyncio.to_thread(_sync_get_issue, issue_id)
         return _json_result(result)
 
+    @mcp.tool(description=(
+        "Search issues across projects. Optionally filter by project, state, or text query. "
+        "Text search matches against issue type and value. "
+        "For pagination, set page (1-based) and per_page; response includes total, has_more."
+    ))
+    async def search_issues(
+        query: str | None = None,
+        project_id: int | None = None,
+        state: str = "open",
+        sort: str = "last_seen",
+        order: str = "desc",
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
+    ) -> str:
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(
+            _sync_search_issues, project_id, query, state, sort, order, effective_limit
+        )
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
+        return _json_result(result)
+
+    @mcp.tool(description="Resolve an issue. Marks it as fixed.")
+    async def resolve_issue(issue_id: str) -> str:
+        result = await asyncio.to_thread(_sync_resolve_issue, issue_id)
+        return _json_result(result)
+
+    @mcp.tool(description="Reopen a resolved issue.")
+    async def reopen_issue(issue_id: str) -> str:
+        result = await asyncio.to_thread(_sync_reopen_issue, issue_id)
+        return _json_result(result)
+
+    @mcp.tool(description="Resolve an issue until the next release. The issue will be checked against future releases.")
+    async def resolve_issue_next_release(issue_id: str) -> str:
+        result = await asyncio.to_thread(_sync_resolve_issue_next_release, issue_id)
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Mute an issue to suppress alerts. Optionally mute for a period or until a volume threshold is reached. "
+        "Examples: mute_issue(issue_id) for permanent mute, mute_issue(issue_id, period_name='day', nr_of_periods=3) "
+        "to mute for 3 days, or mute_issue(issue_id, period_name='day', nr_of_periods=1, gte_threshold=10) to mute "
+        "until 10 events occur in a day."
+    ))
+    async def mute_issue(
+        issue_id: str,
+        period_name: str | None = None,
+        nr_of_periods: int | None = None,
+        gte_threshold: int | None = None,
+    ) -> str:
+        result = await asyncio.to_thread(_sync_mute_issue, issue_id, period_name, nr_of_periods, gte_threshold)
+        return _json_result(result)
+
+    @mcp.tool(description="Unmute a muted issue to resume alerts.")
+    async def unmute_issue(issue_id: str) -> str:
+        result = await asyncio.to_thread(_sync_unmute_issue, issue_id)
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Get issue statistics. Without project_id returns global stats; with project_id returns project-level stats. "
+        "Includes counts by status and recent activity (last 7 days)."
+    ))
+    async def get_issue_stats(project_id: int | None = None) -> str:
+        result = await asyncio.to_thread(_sync_get_issue_stats, project_id)
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Get a project issue summary with stats and top 10 issues by event count."
+    ))
+    async def get_project_issue_summary(project_id: int) -> str:
+        result = await asyncio.to_thread(_sync_get_project_issue_summary, project_id)
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Get the change history of an issue (resolved, muted, reopened, etc.)."
+    ))
+    async def list_issue_history(issue_id: str, limit: int = DEFAULT_LIMIT) -> str:
+        result = await asyncio.to_thread(_sync_get_issue_history, issue_id, _clamp_limit(limit))
+        return _json_result(result)
+
+    @mcp.tool(description="Add a comment to an issue.")
+    async def add_issue_comment(issue_id: str, comment: str) -> str:
+        result = await asyncio.to_thread(_sync_add_issue_comment, issue_id, comment)
+        return _json_result(result)
+
+    @mcp.tool(description="List comments (manual annotations) on an issue.")
+    async def list_issue_comments(issue_id: str, limit: int = DEFAULT_LIMIT) -> str:
+        result = await asyncio.to_thread(_sync_list_issue_comments, issue_id, _clamp_limit(limit))
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Bulk resolve multiple issues. Set dry_run=true to preview without changes. "
+        "Returns per-issue results with status (resolved, skipped, error)."
+    ))
+    async def bulk_resolve_issues(issue_ids: list[str], dry_run: bool = False) -> str:
+        result = await asyncio.to_thread(_sync_bulk_resolve_issues, issue_ids, dry_run)
+        return _json_result(result)
+
+    @mcp.tool(description=(
+        "Bulk mute multiple issues. Set dry_run=true to preview without changes. "
+        "Optionally mute for a period or until a threshold. "
+        "Returns per-issue results with status (muted, skipped, error)."
+    ))
+    async def bulk_mute_issues(
+        issue_ids: list[str],
+        period_name: str | None = None,
+        nr_of_periods: int | None = None,
+        gte_threshold: int | None = None,
+        dry_run: bool = False,
+    ) -> str:
+        result = await asyncio.to_thread(
+            _sync_bulk_mute_issues, issue_ids, period_name, nr_of_periods, gte_threshold, dry_run
+        )
+        return _json_result(result)
+
     # -- Events --
 
     @mcp.tool(description="List events for an issue. Defaults to newest first.")
-    async def list_events(issue_id: str, order: str = "desc", limit: int = DEFAULT_LIMIT) -> str:
-        result = await asyncio.to_thread(_sync_list_events, issue_id, order, _clamp_limit(limit))
+    async def list_events(
+        issue_id: str,
+        order: str = "desc",
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
+    ) -> str:
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(_sync_list_events, issue_id, order, effective_limit)
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
         return _json_result(result)
 
     @mcp.tool(description="Get a single event by UUID. Includes full event data and stacktrace markdown.")
@@ -375,8 +794,17 @@ def create_mcp_server():
     # -- Releases --
 
     @mcp.tool(description="List releases for a project. Defaults to newest first.")
-    async def list_releases(project_id: int, order: str = "desc", limit: int = DEFAULT_LIMIT) -> str:
-        result = await asyncio.to_thread(_sync_list_releases, project_id, order, _clamp_limit(limit))
+    async def list_releases(
+        project_id: int,
+        order: str = "desc",
+        limit: int = DEFAULT_LIMIT,
+        page: int | None = None,
+        per_page: int = DEFAULT_LIMIT,
+    ) -> str:
+        effective_limit = _clamp_limit(per_page) if page else _clamp_limit(limit)
+        result = await asyncio.to_thread(_sync_list_releases, project_id, order, effective_limit)
+        if page is not None:
+            result = _paginate(result, page, _clamp_limit(per_page))
         return _json_result(result)
 
     @mcp.tool(description="Get a single release by UUID.")
