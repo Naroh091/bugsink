@@ -1,21 +1,25 @@
 import json
-
 import requests
-from django import forms
 from django.utils import timezone
 
+from django import forms
+from django.template.defaultfilters import truncatechars
+
+from snappea.decorators import shared_task
 from bugsink.app_settings import get_settings
 from bugsink.transaction import immediate_atomic
-from issues.models import Issue
-from issues.serializers import IssueSerializer
-from snappea.decorators import shared_task
 
+from issues.models import Issue
 from .base import BaseWebhookBackend
 from .webhook_security import validate_webhook_url
 
 
-class CustomBackendForm(forms.Form):
-    webhook_url = forms.URLField(required=True, assume_scheme="https")
+class MsTeamsConfigForm(forms.Form):
+    # Workflow ("Post to a channel when a webhook request is received") URLs are much longer than the 200 chars that
+    # URLField defaults to.
+    webhook_url = forms.URLField(required=True, assume_scheme="https", max_length=1000)
+
+    # Microsoft Teams does not support multi-channel webhooks: the channel is picked when the workflow is created.
 
     def __init__(self, *args, **kwargs):
         config = kwargs.pop("config", None)
@@ -36,6 +40,36 @@ class CustomBackendForm(forms.Form):
         except ValueError as e:
             raise forms.ValidationError(str(e)) from e
         return webhook_url
+
+
+def _safe_markdown(text):
+    # Adaptive Card TextBlocks render a subset of markdown; escape the characters that carry meaning in it.
+    return (text.replace("\\", "\\\\").replace("*", "\\*").replace("_", "\\_")
+                .replace("[", "\\[").replace("]", "\\]").replace("#", "\\#").replace("-", "\\-"))
+
+
+def _as_message(card_body, actions=None):
+    # Teams expects an Adaptive Card wrapped in an attachment; see
+    # https://learn.microsoft.com/en-us/microsoftteams/platform/task-modules-and-cards/cards/cards-reference
+    content = {
+        "type": "AdaptiveCard",
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "version": "1.4",
+        "body": card_body,
+    }
+
+    if actions:
+        content["actions"] = actions
+
+    return {
+        "type": "message",
+        "attachments": [
+            {
+                "contentType": "application/vnd.microsoft.card.adaptive",
+                "content": content,
+            }
+        ],
+    }
 
 
 def _store_failure_info(service_config_id, exception, response=None):
@@ -88,31 +122,31 @@ def _store_success_info(service_config_id):
 
 
 @shared_task
-def custom_backend_send_test_message(webhook_url, project_name, display_name, service_config_id):
-    data = {
-        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
-        "friendly_id": "TEST-1",
-        "project": 1,
-        "digest_order": 1,
-        "first_seen": "2024-01-10T08:15:00Z",
-        "last_seen": "2024-01-15T10:30:00Z",
-        "digested_event_count": 15,
-        "stored_event_count": 15,
-        "calculated_type": "ValueError",
-        "calculated_value": "invalid literal for int()",
-        "transaction": "/api/users/login",
-        "is_resolved": False,
-        "is_resolved_unconditionally": False,
-        "is_resolved_by_next_release": False,
-        "is_muted": False,
-        "title": "ValueError: invalid literal for int()",
-        "project_name": project_name,
-        "url": "https://bugsink.example.com/issues/497f6eca-6276-4993-bfeb-53cbbbba6f08/",
-        "alert_reason": "TEST",
-    }
+def msteams_backend_send_test_message(webhook_url, project_name, display_name, service_config_id):
+    data = _as_message([
+        {
+            "type": "TextBlock",
+            "text": "TEST issue",
+            "size": "Large",
+            "weight": "Bolder",
+            "wrap": True,
+        },
+        {
+            "type": "TextBlock",
+            "text": "Test message by Bugsink to test the webhook setup.",
+            "wrap": True,
+        },
+        {
+            "type": "FactSet",
+            "facts": [
+                {"title": "project", "value": _safe_markdown(project_name)},
+                {"title": "message backend", "value": _safe_markdown(display_name)},
+            ],
+        },
+    ])
 
     try:
-        result = CustomBackend.safe_post(
+        result = MsTeamsBackend.safe_post(
             webhook_url,
             data=json.dumps(data),
             headers={"Content-Type": "application/json"},
@@ -122,7 +156,7 @@ def custom_backend_send_test_message(webhook_url, project_name, display_name, se
 
         _store_success_info(service_config_id)
     except requests.RequestException as e:
-        response = getattr(e, "response", None)
+        response = getattr(e, 'response', None)
         _store_failure_info(service_config_id, e, response)
 
     except Exception as e:
@@ -130,25 +164,58 @@ def custom_backend_send_test_message(webhook_url, project_name, display_name, se
 
 
 @shared_task
-def custom_backend_send_alert(
-    webhook_url, issue_id, state_description, alert_article, alert_reason, service_config_id, unmute_reason=None
-):
+def msteams_backend_send_alert(
+        webhook_url, issue_id, state_description, alert_article, alert_reason, service_config_id, unmute_reason=None):
+
     issue = Issue.objects.get(id=issue_id)
 
-    # Deliberately mirror the canonical issue API; a test keeps the test-message fields aligned with this payload.
-    data = dict(IssueSerializer(issue).data)
+    issue_url = get_settings().BASE_URL + issue.get_absolute_url()
 
-    # Add additional convenience fields
-    data["title"] = issue.title()
-    data["project_name"] = issue.project.name
-    data["url"] = get_settings().BASE_URL + issue.get_absolute_url()
-    data["alert_reason"] = alert_reason
+    body = [
+        {
+            "type": "TextBlock",
+            "text": _safe_markdown(truncatechars(issue.title(), 150)),
+            "size": "Large",
+            "weight": "Bolder",
+            "wrap": True,
+        },
+        {
+            "type": "TextBlock",
+            "text": f"{alert_reason} issue",
+            "wrap": True,
+        },
+    ]
 
     if unmute_reason:
-        data["unmute_reason"] = unmute_reason
+        body.append({
+            "type": "TextBlock",
+            "text": _safe_markdown(unmute_reason),
+            "wrap": True,
+        })
+
+    # assumption: visavis email, project.name is of less importance, because in slack-like things you may (though not
+    # always) do one-channel per project. more so for site_title (if you have multiple Bugsinks, you'll surely have
+    # multiple teams channels)
+    facts = [{"title": "project", "value": _safe_markdown(issue.project.name)}]
+
+    # left as a (possible) TODO, because the amount of refactoring (passing event to this function) is too big for now
+    # if event.release:
+    #     facts.append({"title": "release", "value": _safe_markdown(event.release)})
+    # if event.environment:
+    #     facts.append({"title": "environment", "value": _safe_markdown(event.environment)})
+
+    body.append({"type": "FactSet", "facts": facts})
+
+    data = _as_message(body, actions=[
+        {
+            "type": "Action.OpenUrl",
+            "title": "view on Bugsink",
+            "url": issue_url,
+        },
+    ])
 
     try:
-        result = CustomBackend.safe_post(
+        result = MsTeamsBackend.safe_post(
             webhook_url,
             data=json.dumps(data),
             headers={"Content-Type": "application/json"},
@@ -158,24 +225,24 @@ def custom_backend_send_alert(
 
         _store_success_info(service_config_id)
     except requests.RequestException as e:
-        response = getattr(e, "response", None)
+        response = getattr(e, 'response', None)
         _store_failure_info(service_config_id, e, response)
 
     except Exception as e:
         _store_failure_info(service_config_id, e)
 
 
-class CustomBackend(BaseWebhookBackend):
+class MsTeamsBackend(BaseWebhookBackend):
     def __init__(self, service_config):
         self.service_config = service_config
 
     @classmethod
     def get_form_class(cls):
-        return CustomBackendForm
+        return MsTeamsConfigForm
 
     def send_test_message(self, project_name=None):
         config = json.loads(self.service_config.config)
-        custom_backend_send_test_message.delay(
+        msteams_backend_send_test_message.delay(
             config["webhook_url"],
             project_name or self.service_config.team.name,
             self.service_config.display_name,
@@ -184,7 +251,7 @@ class CustomBackend(BaseWebhookBackend):
 
     def send_alert(self, issue_id, state_description, alert_article, alert_reason, **kwargs):
         config = json.loads(self.service_config.config)
-        custom_backend_send_alert.delay(
+        msteams_backend_send_alert.delay(
             config["webhook_url"],
             issue_id,
             state_description,
