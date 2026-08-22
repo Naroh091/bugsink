@@ -265,14 +265,14 @@ class TelegramBackend(BaseWebhookBackend):
     def get_form_class(cls):
         return TelegramConfigForm
 
-    def send_test_message(self):
+    def send_test_message(self, project_name=None):
         config = json.loads(self.service_config.config)
         bot_token = config["bot_token"]
         telegram_backend_send_test_message.delay(
             _build_webhook_url(bot_token),
             bot_token,
             config["chat_id"],
-            self.service_config.project.name,
+            project_name or self.service_config.team.name,
             self.service_config.display_name,
             self.service_config.id,
             message_thread_id=config.get("message_thread_id"),

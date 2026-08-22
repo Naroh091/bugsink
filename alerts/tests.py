@@ -910,13 +910,15 @@ class TestCustomBackendErrorHandling(DjangoTestCase):
 
 class TestMsTeamsBackend(DjangoTestCase):
     def setUp(self):
-        self.project = Project.objects.create(name="Test project")
+        self.team = Team.objects.create(name="Test team")
+        self.project = Project.objects.create(name="Test project", team=self.team)
         self.config = MessagingServiceConfig.objects.create(
-            project=self.project,
+            team=self.team,
             display_name="Test Teams",
             kind="msteams",
             config=json.dumps({"webhook_url": "https://example.logic.azure.com/workflows/test"}),
         )
+        self.config.projects.add(self.project)
 
     def _get_card(self, mock_post):
         data = json.loads(mock_post.call_args.kwargs["data"])
