@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static code %}
 
-{% block title %}Connect Claude Code · {{ site_title }}{% endblock %}
+{% block title %}Connect MCP clients · {{ site_title }}{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-center">
@@ -10,10 +10,10 @@
         <!-- Hero -->
         <div class="flex items-center mt-4 mb-6">
             <div class="flex-1">
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Connect Claude Code</h1>
+                <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Connect MCP clients</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                    Connect Claude Code (or any MCP-compatible client) to this Bugsink instance so an LLM can
-                    autonomously browse issues, inspect stacktraces, and investigate errors.
+                    Connect Claude Code, OpenCode, Hermes (or any MCP-compatible client) to this Bugsink instance so an
+                    LLM can autonomously browse issues, inspect stacktraces, and investigate errors.
                 </p>
             </div>
             <div class="hidden sm:block ml-6 shrink-0">
@@ -39,9 +39,9 @@
             <a href="{% url 'auth_token_list' %}" class="text-cyan-600 dark:text-cyan-300 hover:underline font-semibold">Tokens</a> page.
         </div>
 
-        <!-- Option 1: claude mcp add -->
+        <!-- Claude Code -->
         <div class="mb-8">
-            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">Option 1 — one-time command</h2>
+            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">Claude Code</h2>
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
                 Run this once in your terminal. It writes the server into your local Claude Code config and applies only to your machine.
             </p>
@@ -49,14 +49,11 @@
 claude mcp add --transport http bugsink {{ mcp_url }} \
   --header "Authorization: Bearer <your-token>"
 {% endcode %}
-        </div>
-
-        <!-- Option 2: .mcp.json -->
-        <div class="mb-8">
-            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">Option 2 — shared config (team)</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                This <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">.mcp.json</code> is already committed at the root of this repo.
-                Each person sets <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">BUGSINK_TOKEN</code> in their shell and the server is picked up automatically.
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+                For team-wide setup, commit a <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">.mcp.json</code>
+                at the root of your repo (this repo already has one). Each person sets
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">BUGSINK_TOKEN</code> in their shell
+                and the server is picked up automatically:
             </p>
 {% code %}:::bash
 export BUGSINK_TOKEN=<your-token>
@@ -64,15 +61,61 @@ export BUGSINK_TOKEN=<your-token>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
                 Add the line above to your <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">~/.bashrc</code>
                 or <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">~/.zshrc</code> to make it permanent.
+                Type <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">/mcp</code> in Claude Code to verify —
+                you should see <strong>bugsink · connected</strong>.
             </p>
         </div>
 
-        <!-- Verification -->
+        <!-- OpenCode -->
         <div class="mb-8">
-            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">Verify the connection</h2>
+            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">OpenCode</h2>
             <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                Type <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">/mcp</code> in Claude Code — you should see
-                <strong>bugsink · connected</strong> with 16 tools available.
+                Add the server under <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">mcp</code> in your
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">opencode.json</code>
+                (project root, or globally in <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">~/.config/opencode/</code>).
+            </p>
+{% code %}:::json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "bugsink": {
+      "type": "remote",
+      "url": "{{ mcp_url }}",
+      "enabled": true,
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:BUGSINK_TOKEN}"
+      }
+    }
+  }
+}
+{% endcode %}
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">{env:BUGSINK_TOKEN}</code> is read from
+                your environment; <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">oauth: false</code> tells
+                OpenCode to use the token instead of attempting an OAuth flow.
+            </p>
+        </div>
+
+        <!-- Hermes -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">Hermes</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                Add the server under <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">mcp_servers</code> in your
+                Hermes <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">config.yaml</code>, then run
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">/reload-mcp</code> (or restart Hermes).
+            </p>
+{% code %}:::yaml
+mcp_servers:
+  bugsink:
+    url: "{{ mcp_url }}"
+    headers:
+      Authorization: "Bearer <your-token>"
+{% endcode %}
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+                Optionally, restrict the exposed tool surface with
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">tools.include</code>, e.g. to the read-oriented
+                <code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">list_issues, get_issue, get_event_stacktrace</code>.
             </p>
         </div>
 

@@ -95,9 +95,9 @@ urlpatterns = [
     # this weird URL is what sentry-cli uses as part of their "login" flow. weird, because the word ':orgslug' shows up
     # verbatim. In any case, we simply redirect to the auth token list, such that you can set one up
     path('orgredirect/organizations/:orgslug/settings/auth-tokens/',
-         RedirectView.as_view(url='/bsmain/auth_tokens/', permanent=False)),
+         RedirectView.as_view(url='/settings/auth-tokens/', permanent=False)),
 
-    path('bsmain/', include('bsmain.urls')),
+    path('settings/', include('bsmain.urls')),
 ]
 
 for urlconf_module in get_settings().EXTRA_URLCONF_MODULES:
