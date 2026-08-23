@@ -233,7 +233,7 @@ class NavigationLinksTestCase(TransactionTestCase):
         self.assertContains(response, 'Admin')
         self.assertContains(response, '/users/')
         self.assertContains(response, 'Users')
-        self.assertContains(response, '/bsmain/auth_tokens/')
+        self.assertContains(response, '/settings/auth-tokens/')
         self.assertContains(response, 'Tokens')
 
     def test_user_sees_only_normal_links(self):
@@ -254,7 +254,7 @@ class NavigationLinksTestCase(TransactionTestCase):
         self.assertNotContains(response, 'Admin')
         self.assertNotContains(response, '/users/')
         self.assertNotContains(response, 'Users')
-        self.assertNotContains(response, '/bsmain/auth_tokens/')
+        self.assertNotContains(response, '/settings/auth-tokens/')
         self.assertNotContains(response, 'Tokens')
 
     def test_anonymous_user_sees_no_links(self):
@@ -273,5 +273,5 @@ class NavigationLinksTestCase(TransactionTestCase):
         self.assertNotContains(response, 'Admin')
         self.assertNotContains(response, '/users/')
         self.assertNotContains(response, 'Users')
-        self.assertNotContains(response, '/bsmain/auth_tokens/')
+        self.assertNotContains(response, '/settings/auth-tokens/')
         self.assertNotContains(response, 'Tokens')
