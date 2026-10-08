@@ -7,6 +7,7 @@ LLMs can autonomously investigate issues.  Runs as a standalone ASGI process
 """
 
 import asyncio
+import functools
 import json
 import logging
 from urllib.parse import urlparse
@@ -22,6 +23,25 @@ logger = logging.getLogger("bugsink.mcp")
 
 MAX_LIMIT = 250
 DEFAULT_LIMIT = 50
+
+
+def _with_fresh_connection(func):
+    """Drop stale DB connections before ORM access in this long-lived process.
+
+    The MCP server is a standalone uvicorn process with no Django
+    request/response cycle, so thread-local connections are never recycled
+    and go stale (MySQL "Server has gone away" after idle), turning every
+    DB-touching request into a 500. Closing obsolete connections first
+    forces the next query onto a new one. Deliberately no retry here: a
+    failure past this point is genuine, and retrying writes could duplicate
+    them -- the client retries the tool call instead.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        from django.db import close_old_connections
+        close_old_connections()
+        return func(*args, **kwargs)
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
@@ -68,9 +88,18 @@ class BearerAuthMiddleware:
         await response(scope, receive, send)
 
     @staticmethod
+    @_with_fresh_connection
     def _lookup_token(raw):
         from bsmain.models import AuthToken
-        return AuthToken.objects.filter(token=raw).first()
+        from django.db import OperationalError, connection
+        try:
+            return AuthToken.objects.filter(token=raw).first()
+        except OperationalError:
+            # The connection died between the freshness check and the query
+            # (e.g. MySQL restart). Retry once on a new connection; safe
+            # because this is a pure read with no side effects.
+            connection.close()
+            return AuthToken.objects.filter(token=raw).first()
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +132,7 @@ def _build_ordering(field, order):
 
 # -- Teams --
 
+@_with_fresh_connection
 def _sync_list_teams(limit, order):
     from teams.models import Team
     from teams.serializers import TeamListSerializer
@@ -110,6 +140,7 @@ def _sync_list_teams(limit, order):
     return TeamListSerializer(qs, many=True).data
 
 
+@_with_fresh_connection
 def _sync_get_team(team_id):
     from teams.models import Team
     from teams.serializers import TeamDetailSerializer
@@ -117,6 +148,7 @@ def _sync_get_team(team_id):
     return TeamDetailSerializer(team).data
 
 
+@_with_fresh_connection
 def _sync_create_team(name, visibility):
     from teams.serializers import TeamCreateUpdateSerializer
     from teams.serializers import TeamDetailSerializer
@@ -129,6 +161,7 @@ def _sync_create_team(name, visibility):
     return TeamDetailSerializer(team).data
 
 
+@_with_fresh_connection
 def _sync_update_team(team_id, name, visibility):
     from teams.models import Team
     from teams.serializers import TeamCreateUpdateSerializer
@@ -147,6 +180,7 @@ def _sync_update_team(team_id, name, visibility):
 
 # -- Projects --
 
+@_with_fresh_connection
 def _sync_list_projects(team_id, limit, order):
     from projects.models import Project
     from projects.serializers import ProjectListSerializer
@@ -157,6 +191,7 @@ def _sync_list_projects(team_id, limit, order):
     return ProjectListSerializer(qs, many=True).data
 
 
+@_with_fresh_connection
 def _sync_get_project(project_id):
     from projects.models import Project
     from projects.serializers import ProjectDetailSerializer
@@ -164,6 +199,7 @@ def _sync_get_project(project_id):
     return ProjectDetailSerializer(project).data
 
 
+@_with_fresh_connection
 def _sync_create_project(team_id, name):
     from projects.serializers import ProjectCreateUpdateSerializer
     from projects.serializers import ProjectDetailSerializer
@@ -175,6 +211,7 @@ def _sync_create_project(team_id, name):
     return ProjectDetailSerializer(project).data
 
 
+@_with_fresh_connection
 def _sync_update_project(project_id, **fields):
     from projects.models import Project
     from projects.serializers import ProjectCreateUpdateSerializer
@@ -189,6 +226,7 @@ def _sync_update_project(project_id, **fields):
 
 # -- Issues --
 
+@_with_fresh_connection
 def _sync_list_issues(project_id, sort, order, state, limit):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
@@ -214,6 +252,7 @@ def _apply_state_filter(qs, state):
     return qs
 
 
+@_with_fresh_connection
 def _sync_search_issues(project_id, query, state, sort, order, limit):
     from django.db.models import Q
     from issues.models import Issue
@@ -232,6 +271,7 @@ def _sync_search_issues(project_id, query, state, sort, order, limit):
     return IssueSerializer(qs, many=True).data
 
 
+@_with_fresh_connection
 def _sync_get_issue_stats(project_id):
     from datetime import timedelta
     from django.db.models import Count, Q
@@ -264,6 +304,7 @@ def _sync_get_issue_stats(project_id):
     }
 
 
+@_with_fresh_connection
 def _sync_get_project_issue_summary(project_id):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
@@ -280,6 +321,7 @@ def _sync_get_project_issue_summary(project_id):
     }
 
 
+@_with_fresh_connection
 def _sync_get_issue_history(issue_id, limit):
     from issues.models import Issue, TurningPoint
 
@@ -303,6 +345,7 @@ def _sync_get_issue_history(issue_id, limit):
     }
 
 
+@_with_fresh_connection
 def _sync_add_issue_comment(issue_id, comment):
     from issues.models import Issue
     from issues.serializers import IssueCommentSerializer
@@ -323,6 +366,7 @@ def _sync_add_issue_comment(issue_id, comment):
     }
 
 
+@_with_fresh_connection
 def _sync_list_issue_comments(issue_id, limit):
     from issues.models import Issue, TurningPoint, TurningPointKind
 
@@ -344,6 +388,7 @@ def _sync_list_issue_comments(issue_id, limit):
     ]
 
 
+@_with_fresh_connection
 def _sync_bulk_resolve_issues(issue_ids, dry_run):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -367,6 +412,7 @@ def _sync_bulk_resolve_issues(issue_ids, dry_run):
     return results
 
 
+@_with_fresh_connection
 def _sync_bulk_mute_issues(issue_ids, period_name, nr_of_periods, gte_threshold, dry_run):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -401,6 +447,7 @@ def _sync_bulk_mute_issues(issue_ids, period_name, nr_of_periods, gte_threshold,
     return results
 
 
+@_with_fresh_connection
 def _sync_get_issue(issue_id):
     from issues.models import Issue
     from issues.serializers import IssueSerializer
@@ -408,6 +455,7 @@ def _sync_get_issue(issue_id):
     return IssueSerializer(issue).data
 
 
+@_with_fresh_connection
 def _sync_resolve_issue(issue_id):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -417,6 +465,7 @@ def _sync_resolve_issue(issue_id):
     return IssueSerializer(issue).data
 
 
+@_with_fresh_connection
 def _sync_reopen_issue(issue_id):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -426,6 +475,7 @@ def _sync_reopen_issue(issue_id):
     return IssueSerializer(issue).data
 
 
+@_with_fresh_connection
 def _sync_resolve_issue_next_release(issue_id):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -435,6 +485,7 @@ def _sync_resolve_issue_next_release(issue_id):
     return IssueSerializer(issue).data
 
 
+@_with_fresh_connection
 def _sync_mute_issue(issue_id, period_name, nr_of_periods, gte_threshold):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -450,6 +501,7 @@ def _sync_mute_issue(issue_id, period_name, nr_of_periods, gte_threshold):
     return IssueSerializer(issue).data
 
 
+@_with_fresh_connection
 def _sync_unmute_issue(issue_id):
     from issues.models import Issue, IssueStateManager, apply_issue_action
     from issues.serializers import IssueSerializer
@@ -461,6 +513,7 @@ def _sync_unmute_issue(issue_id):
 
 # -- Events --
 
+@_with_fresh_connection
 def _sync_list_events(issue_id, order, limit):
     from events.models import Event
     from events.serializers import EventListSerializer
@@ -468,6 +521,7 @@ def _sync_list_events(issue_id, order, limit):
     return EventListSerializer(qs, many=True).data
 
 
+@_with_fresh_connection
 def _sync_get_event(event_id):
     from events.models import Event
     from events.serializers import EventDetailSerializer
@@ -475,6 +529,7 @@ def _sync_get_event(event_id):
     return EventDetailSerializer(event).data
 
 
+@_with_fresh_connection
 def _sync_get_event_stacktrace(event_id):
     from events.models import Event
     from events.markdown_stacktrace import render_stacktrace_md
@@ -484,6 +539,7 @@ def _sync_get_event_stacktrace(event_id):
 
 # -- Releases --
 
+@_with_fresh_connection
 def _sync_list_releases(project_id, order, limit):
     from releases.models import Release
     from releases.serializers import ReleaseListSerializer
@@ -491,6 +547,7 @@ def _sync_list_releases(project_id, order, limit):
     return ReleaseListSerializer(qs, many=True).data
 
 
+@_with_fresh_connection
 def _sync_get_release(release_id):
     from releases.models import Release
     from releases.serializers import ReleaseDetailSerializer
@@ -498,6 +555,7 @@ def _sync_get_release(release_id):
     return ReleaseDetailSerializer(release).data
 
 
+@_with_fresh_connection
 def _sync_create_release(project_id, version):
     from releases.serializers import ReleaseCreateSerializer
     from releases.serializers import ReleaseDetailSerializer
